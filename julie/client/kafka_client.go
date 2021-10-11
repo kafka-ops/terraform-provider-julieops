@@ -7,23 +7,23 @@ import (
 )
 
 type KafkaCluster struct {
-	bootstrapServers string
+	BootstrapServers string
 }
 
 type Topic struct {
-	name string
-	replicationFactor int
-	numPartitions int
-	config map[string]string
+	Name string
+	ReplicationFactor int
+	NumPartitions int
+	Config map[string]string
 }
 
-func NewKafkaCluster() *KafkaCluster {
-	return &KafkaCluster{}
+func NewKafkaCluster(bootstrapServers string) *KafkaCluster {
+	return &KafkaCluster{BootstrapServers: bootstrapServers}
 }
 
-func (k *KafkaCluster) ListTopics(ctx context.Context) (topics []Topic, err error) {
+func (k *KafkaCluster) ListTopics(ctx context.Context, topic *string, allTopics bool) (topics []Topic, err error) {
 
-	adminClient, err := kafka.NewAdminClient(&kafka.ConfigMap{"bootstrap.servers": k.bootstrapServers})
+	adminClient, err := kafka.NewAdminClient(&kafka.ConfigMap{"bootstrap.servers": k.BootstrapServers})
 	if err != nil {
 		// LOG the error
 		return nil, err
@@ -32,7 +32,7 @@ func (k *KafkaCluster) ListTopics(ctx context.Context) (topics []Topic, err erro
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	metadata, err := adminClient.GetMetadata(nil, true, 60000)
+	metadata, err := adminClient.GetMetadata(topic, allTopics, 60000)
 
 	if err != nil {
 		// LOG the error
@@ -43,8 +43,8 @@ func (k *KafkaCluster) ListTopics(ctx context.Context) (topics []Topic, err erro
 
 	for _,val := range metadata.Topics {
 		acc = append(acc, Topic{
-			name: val.Topic,
-			numPartitions: len(val.Partitions),
+			Name: val.Topic,
+			NumPartitions: len(val.Partitions),
 		})
 	}
 
@@ -54,7 +54,7 @@ func (k *KafkaCluster) ListTopics(ctx context.Context) (topics []Topic, err erro
 
 func (k *KafkaCluster) CreateTopic(ctx context.Context, topic string, numPartitions int, replicationFactor int) (topics []Topic, err error) {
 
-	adminClient, err := kafka.NewAdminClient(&kafka.ConfigMap{"bootstrap.servers": k.bootstrapServers})
+	adminClient, err := kafka.NewAdminClient(&kafka.ConfigMap{"bootstrap.servers": k.BootstrapServers})
 	if err != nil {
 		// LOG the error
 		return nil, err
@@ -81,7 +81,7 @@ func (k *KafkaCluster) CreateTopic(ctx context.Context, topic string, numPartiti
 	var acc = make([]Topic, len(results))
 
 	for _, result := range results {
-		acc = append(acc, Topic{name: result.Topic})
+		acc = append(acc, Topic{Name: result.Topic})
 	}
 
 	return acc, nil

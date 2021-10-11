@@ -1,0 +1,47 @@
+{
+        "namespace": "ksql",
+        "name": "txs",
+        "type": "record",
+        "fields": [
+                {"name": "eventTime", "type": {
+                    "type": "long",
+                    "arg.properties": {
+                        "range": {
+                            "min": 1487715775521,
+                            "max": 1519273364600
+                        }
+                    }
+                }},
+                {"name": "userid", "type": {
+                    "type": "string",
+                    "arg.properties": {
+                        "regex": "User_[1-9]"
+                    }
+                }},
+                {"name": "txId", "type": {
+                    "type": "string",
+                    "arg.properties": {
+                        "regex": "Tx_[1-9]+"
+                    }
+                }},
+                {"name": "value", "type": {
+                    "type": "long",
+                    "arg.properties": {
+                        "range": {
+                            "min": 1,
+                            "max": 500000
+                        }
+                    }
+                }},
+                {"name": "status", "type": {
+                    "type": "string",
+                    "arg.properties": {
+                        "options": [
+                            "MALE",
+                            "FEMALE",
+                            "OTHER"
+                        ]
+                    }
+                }}
+        ]
+}

@@ -1,2 +1,4 @@
 .idea/
 vendor/
+.terraform*
+examples/terraform.tfstate
