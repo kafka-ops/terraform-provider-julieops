@@ -8,7 +8,7 @@ terraform {
 }
 
 provider "julieops" {
-  bootstrap_servers = ["localhost:9092"]
+  bootstrap_servers = "localhost:29092"
 }
 
 data "julieops_kafka_topic" "all" {
