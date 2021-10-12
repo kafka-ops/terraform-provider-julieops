@@ -28,15 +28,15 @@ func dataSourceKafkaTopics() *schema.Resource {
 				Description: "The name of the topic.",
 			},
 			"partitions": {
-				Type:         schema.TypeInt,
-				Required:     true,
-				Description:  "Number of partitions.",
+				Type:        schema.TypeInt,
+				Required:    true,
+				Description: "Number of partitions.",
 			},
 			"replication_factor": {
-				Type:         schema.TypeInt,
-				Required:     true,
-				ForceNew:     false,
-				Description:  "Number of replicas.",
+				Type:        schema.TypeInt,
+				Required:    true,
+				ForceNew:    false,
+				Description: "Number of replicas.",
 			},
 			"config": {
 				Type:        schema.TypeMap,

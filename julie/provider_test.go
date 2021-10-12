@@ -9,7 +9,6 @@ import (
 var testProvider *schema.Provider
 var testBootstrapServers string = bootstrapServersFromEnv()
 
-
 func TestProvider(t *testing.T) {
 	if err := Provider().InternalValidate(); err != nil {
 		t.Fatalf("err: %s", err)
@@ -26,7 +25,6 @@ func testAccPreCheck(t *testing.T) {
 		t.Fatal("No client")
 	}
 }
-
 
 func bootstrapServersFromEnv() string {
 	return "localhost:29092"

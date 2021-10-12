@@ -11,10 +11,10 @@ type KafkaCluster struct {
 }
 
 type Topic struct {
-	Name string
+	Name              string
 	ReplicationFactor int
-	NumPartitions int
-	Config map[string]string
+	NumPartitions     int
+	Config            map[string]string
 }
 
 func NewKafkaCluster(bootstrapServers string) *KafkaCluster {
@@ -41,9 +41,9 @@ func (k *KafkaCluster) ListTopics(ctx context.Context, topic *string, allTopics 
 
 	var acc = make([]Topic, len(metadata.Topics))
 
-	for _,val := range metadata.Topics {
+	for _, val := range metadata.Topics {
 		acc = append(acc, Topic{
-			Name: val.Topic,
+			Name:          val.Topic,
 			NumPartitions: len(val.Partitions),
 		})
 	}
@@ -52,7 +52,7 @@ func (k *KafkaCluster) ListTopics(ctx context.Context, topic *string, allTopics 
 
 }
 
-func (k *KafkaCluster) CreateTopic(ctx context.Context, topic string, numPartitions int, replicationFactor int) (topics []Topic, err error) {
+func (k *KafkaCluster) CreateTopic(ctx context.Context, topicName string, numPartitions int, replicationFactor int) (topic *Topic, err error) {
 
 	adminClient, err := kafka.NewAdminClient(&kafka.ConfigMap{"bootstrap.servers": k.BootstrapServers})
 	if err != nil {
@@ -68,8 +68,8 @@ func (k *KafkaCluster) CreateTopic(ctx context.Context, topic string, numPartiti
 	results, err := adminClient.CreateTopics(
 		ctx,
 		[]kafka.TopicSpecification{{
-			Topic: topic,
-			NumPartitions: numPartitions,
+			Topic:             topicName,
+			NumPartitions:     numPartitions,
 			ReplicationFactor: replicationFactor}},
 		kafka.SetAdminOperationTimeout(timeOut))
 
@@ -84,5 +84,11 @@ func (k *KafkaCluster) CreateTopic(ctx context.Context, topic string, numPartiti
 		acc = append(acc, Topic{Name: result.Topic})
 	}
 
-	return acc, nil
+	var resultTopic = Topic{
+		Name: results[0].Topic,
+		ReplicationFactor: replicationFactor,
+		NumPartitions: numPartitions,
+	}
+
+	return &resultTopic, nil
 }
