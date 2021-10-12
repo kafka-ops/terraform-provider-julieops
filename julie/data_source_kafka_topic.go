@@ -63,7 +63,7 @@ func dataSourceKafkaTopicsRead(ctx context.Context, d *schema.ResourceData, m in
 	}
 
 	for _, topic := range topics {
-		log.Printf("DEBUG topicsRead: topic=%s", topic)
+		log.Printf("DEBUG topicsRead: topic=%s", topic.Name)
 		d.Set("name", topic.Name)
 		d.Set("partitions", topic.NumPartitions)
 		d.Set("replication_factor", topic.ReplicationFactor)

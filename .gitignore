@@ -2,3 +2,4 @@
 vendor/
 .terraform*
 examples/terraform.tfstate
+terraform-provider-julieops
