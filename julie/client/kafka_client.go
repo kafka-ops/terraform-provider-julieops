@@ -43,13 +43,33 @@ func (k *KafkaCluster) ListTopics(ctx context.Context, topic *string, allTopics 
 
 	for _, val := range metadata.Topics {
 		acc = append(acc, Topic{
-			Name:          val.Topic,
-			NumPartitions: len(val.Partitions),
+			Name:              val.Topic,
+			NumPartitions:     len(val.Partitions),
+			ReplicationFactor: doReplicationFactor(val.Partitions[0]),
+			Config:            retrieveTopicConfiguration(ctx, val.Topic, adminClient),
 		})
 	}
 
 	return acc, nil
+}
 
+func retrieveTopicConfiguration(ctx context.Context, topic string, adminClient *kafka.AdminClient) (topicConfig map[string]string) {
+	var config = make(map[string]string, 10)
+
+	resourceType, _ := kafka.ResourceTypeFromString("topic")
+	results, _ := adminClient.DescribeConfigs(ctx, []kafka.ConfigResource{{Type: resourceType, Name: topic}})
+
+	for _, result := range results {
+		for _, entry := range result.Config {
+			config[entry.Name] = entry.Value
+		}
+	}
+
+	return config
+}
+
+func doReplicationFactor(partitions kafka.PartitionMetadata) (count int) {
+	return len(partitions.Replicas)
 }
 
 func (k *KafkaCluster) CreateTopic(ctx context.Context, topicName string, numPartitions int, replicationFactor int) (topic *Topic, err error) {
@@ -85,9 +105,9 @@ func (k *KafkaCluster) CreateTopic(ctx context.Context, topicName string, numPar
 	}
 
 	var resultTopic = Topic{
-		Name: results[0].Topic,
+		Name:              results[0].Topic,
 		ReplicationFactor: replicationFactor,
-		NumPartitions: numPartitions,
+		NumPartitions:     numPartitions,
 	}
 
 	return &resultTopic, nil
