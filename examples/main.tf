@@ -1,7 +1,7 @@
 terraform {
   required_providers {
     julieops = {
-      version = "0.2"
+      version = "0.3"
       source  = "purbon.com/com/julieops"
     }
   }
