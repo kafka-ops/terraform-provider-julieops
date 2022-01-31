@@ -62,7 +62,7 @@ func resourceKafkaTopicRead(ctx context.Context, d *schema.ResourceData, m inter
 	var diags diag.Diagnostics
 
 	name := d.Id()
-	c := m.(client.KafkaCluster)
+	c := m.(*client.KafkaCluster)
 
 	topic, err := c.ListTopics(ctx, &name, false)
 
