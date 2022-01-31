@@ -17,7 +17,9 @@ func Provider() *schema.Provider {
 				Description: "A list of kafka brokers",
 			},
 		},
-		ResourcesMap: map[string]*schema.Resource{},
+		ResourcesMap: map[string]*schema.Resource{
+			"julieops_kafka_topic": resourceKafkaTopic(),
+		},
 		DataSourcesMap: map[string]*schema.Resource{
 			"julieops_kafka_topic": dataSourceKafkaTopics(),
 		},
