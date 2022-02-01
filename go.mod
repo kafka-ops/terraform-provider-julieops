@@ -39,3 +39,33 @@ require (
 	google.golang.org/grpc v1.32.0 // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
 )
+
+require (
+	cloud.google.com/go v0.61.0 // indirect
+	cloud.google.com/go/storage v1.10.0 // indirect
+	github.com/aws/aws-sdk-go v1.25.3 // indirect
+	github.com/bgentry/go-netrc v0.0.0-20140422174119-9fd32a8b3d3d // indirect
+	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e // indirect
+	github.com/googleapis/gax-go/v2 v2.0.5 // indirect
+	github.com/hashicorp/go-checkpoint v0.5.0 // indirect
+	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
+	github.com/hashicorp/go-getter v1.5.3 // indirect
+	github.com/hashicorp/go-safetemp v1.0.0 // indirect
+	github.com/hashicorp/logutils v1.0.0 // indirect
+	github.com/hashicorp/terraform-exec v0.14.0 // indirect
+	github.com/hashicorp/terraform-json v0.12.0 // indirect
+	github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af // indirect
+	github.com/jstemmer/go-junit-report v0.9.1 // indirect
+	github.com/klauspost/compress v1.11.2 // indirect
+	github.com/mitchellh/go-homedir v1.1.0 // indirect
+	github.com/ulikunitz/xz v0.5.8 // indirect
+	go.opencensus.io v0.22.4 // indirect
+	golang.org/x/crypto v0.0.0-20210421170649-83a5a9bb288b // indirect
+	golang.org/x/lint v0.0.0-20200302205851-738671d3881b // indirect
+	golang.org/x/mod v0.3.0 // indirect
+	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d // indirect
+	golang.org/x/tools v0.0.0-20200713011307-fd294ab11aed // indirect
+	golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543 // indirect
+	google.golang.org/api v0.29.0 // indirect
+)

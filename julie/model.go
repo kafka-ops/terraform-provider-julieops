@@ -2,10 +2,11 @@ package julie
 
 import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"log"
 	"terraform-provider-julieops/julie/client"
 )
 
-func interfaceAsTopic(d *schema.ResourceData, _interface interface{}) client.Topic  {
+func interfaceAsTopic(d *schema.ResourceData, _interface interface{}) client.Topic {
 
 	name := d.Get("name").(string)
 	partitions := d.Get("partitions").(int)
@@ -19,11 +20,11 @@ func interfaceAsTopic(d *schema.ResourceData, _interface interface{}) client.Top
 			mapConfig[k] = v
 		}
 	}
-
+	log.Printf("interfaceAsTopic, config = %s", mapConfig)
 	return client.Topic{
-		Name: name,
+		Name:              name,
 		ReplicationFactor: replicationFactor,
-		NumPartitions: partitions,
-		Config: mapConfig,
+		NumPartitions:     partitions,
+		Config:            mapConfig,
 	}
 }

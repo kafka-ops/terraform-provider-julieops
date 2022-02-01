@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
+	"log"
 	"time"
 )
 
@@ -28,6 +29,7 @@ func (k *KafkaCluster) ListTopics(ctx context.Context, topic *string, allTopics 
 		// LOG the error
 		return nil, err
 	}
+	defer adminClient.Close()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -42,6 +44,7 @@ func (k *KafkaCluster) ListTopics(ctx context.Context, topic *string, allTopics 
 	var acc = make([]Topic, len(metadata.Topics))
 
 	for _, val := range metadata.Topics {
+		log.Printf("DEBUG: ListTopics: topics = %d, topic = %s, numPartitions= %d", len(metadata.Topics), val.Topic, len(val.Partitions))
 		acc = append(acc, Topic{
 			Name:              val.Topic,
 			NumPartitions:     len(val.Partitions),
@@ -53,6 +56,25 @@ func (k *KafkaCluster) ListTopics(ctx context.Context, topic *string, allTopics 
 	return acc, nil
 }
 
+func (k *KafkaCluster) DeleteTopic(ctx context.Context, topicName string) error {
+	adminClient, err := kafka.NewAdminClient(&kafka.ConfigMap{"bootstrap.servers": k.BootstrapServers})
+	if err != nil {
+		return err
+	}
+	defer adminClient.Close()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	topics := []string{topicName}
+
+	_, err = adminClient.DeleteTopics(ctx, topics)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func retrieveTopicConfiguration(ctx context.Context, topic string, adminClient *kafka.AdminClient) (topicConfig map[string]string) {
 	var config = make(map[string]string, 10)
 
@@ -61,18 +83,24 @@ func retrieveTopicConfiguration(ctx context.Context, topic string, adminClient *
 
 	for _, result := range results {
 		for _, entry := range result.Config {
-			config[entry.Name] = entry.Value
+			if !isDefault(entry) {
+				config[entry.Name] = entry.Value
+			}
 		}
 	}
 
 	return config
 }
 
+func isDefault(entry kafka.ConfigEntryResult) (isDefault bool) {
+	return entry.Source == kafka.ConfigSourceDefault || entry.Source == kafka.ConfigSourceDynamicDefaultBroker
+}
+
 func doReplicationFactor(partitions kafka.PartitionMetadata) (count int) {
 	return len(partitions.Replicas)
 }
 
-func (k *KafkaCluster) CreateTopic(ctx context.Context, topicName string, numPartitions int, replicationFactor int) (topic *Topic, err error) {
+func (k *KafkaCluster) CreateTopic(ctx context.Context, topicName string, numPartitions int, replicationFactor int, config map[string]string) (topic *Topic, err error) {
 
 	adminClient, err := kafka.NewAdminClient(&kafka.ConfigMap{"bootstrap.servers": k.BootstrapServers})
 	if err != nil {
@@ -90,7 +118,8 @@ func (k *KafkaCluster) CreateTopic(ctx context.Context, topicName string, numPar
 		[]kafka.TopicSpecification{{
 			Topic:             topicName,
 			NumPartitions:     numPartitions,
-			ReplicationFactor: replicationFactor}},
+			ReplicationFactor: replicationFactor,
+			Config:            config}},
 		kafka.SetAdminOperationTimeout(timeOut))
 
 	if err != nil {
@@ -108,6 +137,7 @@ func (k *KafkaCluster) CreateTopic(ctx context.Context, topicName string, numPar
 		Name:              results[0].Topic,
 		ReplicationFactor: replicationFactor,
 		NumPartitions:     numPartitions,
+		Config:            config,
 	}
 
 	return &resultTopic, nil

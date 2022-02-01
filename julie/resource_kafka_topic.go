@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"log"
 	"terraform-provider-julieops/julie/client"
 )
 
@@ -13,11 +14,15 @@ func resourceKafkaTopic() *schema.Resource {
 		ReadContext:   resourceKafkaTopicRead,
 		UpdateContext: resourceKafkaTopicUpdate,
 		DeleteContext: resourceKafkaTopicDelete,
+		CustomizeDiff: customDiff,
+		Importer: &schema.ResourceImporter{
+			StateContext: schema.ImportStatePassthroughContext,
+		},
 		Schema: map[string]*schema.Schema{
 			"name": {
 				Type:        schema.TypeString,
 				Required:    true,
-				ForceNew:    true,
+				ForceNew:    false,
 				Description: "The name of the topic.",
 			},
 			"partitions": {
@@ -43,23 +48,23 @@ func resourceKafkaTopic() *schema.Resource {
 }
 
 func resourceKafkaTopicCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	var diags diag.Diagnostics
+	//var diags diag.Diagnostics
 
 	c := m.(*client.KafkaCluster)
 	t := interfaceAsTopic(d, m)
 
-	topic, err := c.CreateTopic(ctx, t.Name, t.NumPartitions, t.ReplicationFactor)
+	topic, err := c.CreateTopic(ctx, t.Name, t.NumPartitions, t.ReplicationFactor, t.Config)
 
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
 	d.SetId(topic.Name)
-	return diags
+	return nil
 }
 
 func resourceKafkaTopicRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	var diags diag.Diagnostics
+	//var diags diag.Diagnostics
 
 	name := d.Id()
 	c := m.(*client.KafkaCluster)
@@ -70,11 +75,16 @@ func resourceKafkaTopicRead(ctx context.Context, d *schema.ResourceData, m inter
 		return diag.FromErr(err)
 	}
 
-	d.Set("name", topic[0].Name)
-	d.Set("partitions", topic[0].NumPartitions)
-	d.Set("replication_factor", topic[0].ReplicationFactor)
+	log.Printf("DEBUG resourceKafkaTopicRead: name= %s, topic= %s, len= %d", name, topic[1].Name, len(topic))
+	if len(topic) > 0 {
+		d.Set("name", topic[1].Name)
+		d.Set("partitions", topic[1].NumPartitions)
+		d.Set("replication_factor", topic[1].ReplicationFactor)
+		d.Set("config", topic[1].Config)
+		d.SetId(topic[1].Name)
+	}
 
-	return diags
+	return nil
 }
 
 func resourceKafkaTopicUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
@@ -83,5 +93,40 @@ func resourceKafkaTopicUpdate(ctx context.Context, d *schema.ResourceData, m int
 
 func resourceKafkaTopicDelete(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
+
+	c := m.(*client.KafkaCluster)
+	name := d.Id()
+	err := c.DeleteTopic(ctx, name)
+
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
 	return diags
+}
+
+func customDiff(ctx context.Context, diff *schema.ResourceDiff, m interface{}) error {
+	log.Printf("Checking the difference")
+
+	//c := m.(*client.KafkaCluster)
+
+	if diff.HasChange("partitions") {
+		oldPartitions, newPartitions := diff.GetChange("partitions")
+		oldInt := oldPartitions.(int)
+		newInt := newPartitions.(int)
+		log.Printf("[INFO] Partitions have changed, old = %d, new = %d", oldInt, newInt)
+
+		if newInt < oldInt {
+			log.Printf("Partition can not be decresed")
+			if err := diff.ForceNew("partitions"); err != nil {
+				return err
+			}
+		}
+	}
+
+	if diff.HasChange("config") {
+		//oldConfig, newConfig := diff.GetChange("config")
+	}
+
+	return nil
 }

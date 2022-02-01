@@ -13,14 +13,15 @@ provider "julieops" {
 
 data "julieops_kafka_topic" "all" {
   name = "_schemas"
-  partitions = 1
-  replication_factor = 3
 }
 
 resource "julieops_kafka_topic" "custom_topic" {
   name = "foo"
   partitions = 1
   replication_factor = 1
+  config = {
+    "retention.ms": "604800000"
+  }
 }
 
 

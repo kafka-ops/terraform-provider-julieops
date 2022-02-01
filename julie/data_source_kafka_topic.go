@@ -3,10 +3,7 @@ package julie
 import (
 	"context"
 	"log"
-	"strconv"
 	"terraform-provider-julieops/julie/client"
-	"time"
-
 	//	"encoding/json"
 	//	"fmt"
 	//	"net/http"
@@ -24,23 +21,23 @@ func dataSourceKafkaTopics() *schema.Resource {
 			"name": {
 				Type:        schema.TypeString,
 				Required:    true,
-				ForceNew:    true,
 				Description: "The name of the topic.",
 			},
 			"partitions": {
 				Type:        schema.TypeInt,
-				Required:    true,
+				Computed:    true,
 				Description: "Number of partitions.",
 			},
 			"replication_factor": {
 				Type:        schema.TypeInt,
-				Required:    true,
+				Computed:    true,
 				ForceNew:    false,
 				Description: "Number of replicas.",
 			},
 			"config": {
 				Type:        schema.TypeMap,
 				Optional:    true,
+				Computed:    true,
 				ForceNew:    false,
 				Description: "A map of string k/v attributes.",
 				Elem:        schema.TypeString,
@@ -63,13 +60,17 @@ func dataSourceKafkaTopicsRead(ctx context.Context, d *schema.ResourceData, m in
 	}
 
 	for _, topic := range topics {
-		log.Printf("DEBUG topicsRead: topic=%s", topic.Name)
+		log.Printf("DEBUG dataSourceKafkaTopicsRead: name=%s, topic=%s, len=%d", name, topic.Name, len(topics))
+		if topic.Name == "" {
+			continue
+		}
 		d.Set("name", topic.Name)
 		d.Set("partitions", topic.NumPartitions)
 		d.Set("replication_factor", topic.ReplicationFactor)
 		d.Set("config", topic.Config)
+		d.SetId(topic.Name)
 	}
-	d.SetId(strconv.FormatInt(time.Now().Unix(), 10))
+	//d.SetId(strconv.FormatInt(time.Now().Unix(), 10))
 
 	return diags
 }
