@@ -48,8 +48,6 @@ func resourceKafkaTopic() *schema.Resource {
 }
 
 func resourceKafkaTopicCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	//var diags diag.Diagnostics
-
 	c := m.(*client.KafkaCluster)
 	t := interfaceAsTopic(d, m)
 
@@ -64,8 +62,6 @@ func resourceKafkaTopicCreate(ctx context.Context, d *schema.ResourceData, m int
 }
 
 func resourceKafkaTopicRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	//var diags diag.Diagnostics
-
 	name := d.Id()
 	c := m.(*client.KafkaCluster)
 
@@ -88,6 +84,16 @@ func resourceKafkaTopicRead(ctx context.Context, d *schema.ResourceData, m inter
 }
 
 func resourceKafkaTopicUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+
+	c := m.(*client.KafkaCluster)
+
+	t := interfaceAsTopic(d, m)
+	log.Printf("DEBUG resourceKafkaTopicUpdate: name=%s config=%s", t.Name, t.Config)
+	err := c.UpdateTopic(ctx, t.Name, t.Config)
+
+	if err != nil {
+		return diag.FromErr(err)
+	}
 	return resourceKafkaTopicRead(ctx, d, m)
 }
 

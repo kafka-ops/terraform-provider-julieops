@@ -142,3 +142,36 @@ func (k *KafkaCluster) CreateTopic(ctx context.Context, topicName string, numPar
 
 	return &resultTopic, nil
 }
+
+func (k *KafkaCluster) UpdateTopic(ctx context.Context, name string, config map[string]string) (err error) {
+	adminClient, err := kafka.NewAdminClient(&kafka.ConfigMap{"bootstrap.servers": k.BootstrapServers})
+	if err != nil {
+		// LOG the error
+		return err
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	defer adminClient.Close()
+
+	entries := make([]kafka.ConfigEntry, len(config))
+	i := 0
+	for k, v := range config {
+		entries[i] = kafka.ConfigEntry{
+			Name:      k,
+			Value:     v,
+			Operation: kafka.AlterOperationSet,
+		}
+		i += 1
+	}
+	resources := []kafka.ConfigResource{
+		{Type: kafka.ResourceTopic, Name: name, Config: entries},
+	}
+
+	log.Printf("DEBUG UpdateTopic: resources = %s entries = %s entriesSize = %d configSize=%d",
+		resources, entries, len(entries), len(config))
+
+	adminClient.AlterConfigs(ctx, resources)
+
+	return nil
+}

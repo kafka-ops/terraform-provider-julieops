@@ -20,7 +20,7 @@ resource "julieops_kafka_topic" "custom_topic" {
   partitions = 1
   replication_factor = 1
   config = {
-    "retention.ms": "604800000"
+    "retention.ms": "42"
   }
 }
 
