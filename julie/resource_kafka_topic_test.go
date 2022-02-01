@@ -29,11 +29,42 @@ func TestAccKafkaTopicRead(t *testing.T) {
 	})
 }
 
+func TestAccKafkaTopicCreateWithConfig(t *testing.T) {
+	topicName := "foo.config"
+	resource.Test(t, resource.TestCase{
+		Providers: testAccProviders,
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		CheckDestroy: testAccKafkaTopicDelete,
+		Steps: []resource.TestStep{
+			{
+				Config: cfg(bootstrapServersFromEnv(), fmt.Sprintf(testResourceTopic_simpleConfig, topicName)),
+				Check: resource.ComposeTestCheckFunc(
+					testAccKafkaTopicExist("julieops_kafka_topic.test_config"),
+				),
+				ExpectNonEmptyPlan: false,
+			},
+		},
+	})
+}
+
 const testResourceTopic_noConfig = `
 resource "julieops_kafka_topic" "test" {
   name               = "%s"
   replication_factor = 1
   partitions         = 1
+}
+`
+
+const testResourceTopic_simpleConfig = `
+resource "julieops_kafka_topic" "test_config" {
+  name               = "%s"
+  replication_factor = 1
+  partitions         = 1
+  config = {
+    "retention.ms": "604800000"
+  }
 }
 `
 
@@ -69,6 +100,7 @@ func testAccKafkaTopicExist(topicName string) resource.TestCheckFunc {
 
 		partitions := resource.Primary.Attributes["partitions"]
 		replicationFactor := resource.Primary.Attributes["replication_factor"]
+		config := resource.Primary.Attributes["config.retention.ms"]
 
 		if partitions != "1" {
 			return fmt.Errorf("topic %s with unexpected partitions number %s", topicName, partitions)
@@ -76,6 +108,10 @@ func testAccKafkaTopicExist(topicName string) resource.TestCheckFunc {
 
 		if replicationFactor != "1" {
 			return fmt.Errorf("topic %s with unexpected replicationFactor number %s", topicName, replicationFactor)
+		}
+
+		if config != "" && config != "604800000" {
+			return fmt.Errorf("topic %s with unexpected config retentino.ms %s", topicName, config)
 		}
 
 		return nil
