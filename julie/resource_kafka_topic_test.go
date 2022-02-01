@@ -62,14 +62,22 @@ func testAccKafkaTopicDelete(s *terraform.State) error {
 
 func testAccKafkaTopicExist(topicName string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-		/*for i, v := range s.RootModule().Resources {
-			fmt.Printf("%s ** %s", i, v)
-		}
-		fmt.Printf("F: %s", s.RootModule().String())*/
-		_, ok := s.RootModule().Resources[topicName]
+		resource, ok := s.RootModule().Resources[topicName]
 		if !ok {
 			return fmt.Errorf("topic not found: %s", topicName)
 		}
+
+		partitions := resource.Primary.Attributes["partitions"]
+		replicationFactor := resource.Primary.Attributes["replication_factor"]
+
+		if partitions != "1" {
+			return fmt.Errorf("topic %s with unexpected partitions number %s", topicName, partitions)
+		}
+
+		if replicationFactor != "1" {
+			return fmt.Errorf("topic %s with unexpected replicationFactor number %s", topicName, replicationFactor)
+		}
+
 		return nil
 	}
 }
