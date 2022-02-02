@@ -11,11 +11,6 @@ provider "julieops" {
   bootstrap_servers = "localhost:29092"
 }
 
-/*
-data "julieops_kafka_topic" "all" {
-  name = "_schemas"
-}
-*/
 
 resource "julieops_kafka_topic" "custom_topic" {
   name = "foo"
@@ -26,7 +21,21 @@ resource "julieops_kafka_topic" "custom_topic" {
   }
 }
 
+resource "julieops_kafka_acl_consumer" "consumer" {
+  project = "context.project"
+  principal = "User:bar"
+  group = "*"
+  metadata = {
+    "foo" = "bar"
+  }
+}
+
+
 /*
+data "julieops_kafka_topic" "all" {
+  name = "_schemas"
+}
+
 output "all_topics" {
   value = data.julieops_kafka_topic.all
 }*/

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
+	"log"
 	"terraform-provider-julieops/julie/client"
 	"testing"
 )
@@ -97,6 +98,7 @@ resource "julieops_kafka_topic" "test_config" {
 
 func cfg(bs string, extraCfg string) string {
 	var str = "provider \"julieops\" { \n \t bootstrap_servers = \"%s\" \n } \n %s \n"
+	log.Printf(str, bs, extraCfg)
 	return fmt.Sprintf(str, bs, extraCfg)
 }
 

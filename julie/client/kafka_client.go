@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"fmt"
 	"github.com/Shopify/sarama"
 	"log"
 	"strings"
@@ -17,6 +18,24 @@ type Topic struct {
 	ReplicationFactor int
 	NumPartitions     int
 	Config            map[string]*string
+}
+
+type ConsumerAcl struct {
+	Id        string
+	Project   string
+	Principal string
+	Group     string
+	Metadata  map[string]string
+}
+
+func NewConsumerAcl(project string, principal string, group string, metadata map[string]string) *ConsumerAcl {
+	return &ConsumerAcl{
+		Id:        fmt.Sprintf("%s#%s#%s", project, principal, group),
+		Project:   project,
+		Principal: principal,
+		Group:     group,
+		Metadata:  metadata,
+	}
 }
 
 func NewKafkaCluster(bootstrapServers string) *KafkaCluster {
@@ -108,29 +127,6 @@ func (k *KafkaCluster) DeleteTopic(ctx context.Context, topicName string) error 
 	return nil
 }
 
-func retrieveTopicConfiguration(topic string, adminClient sarama.ClusterAdmin) (topicConfig map[string]*string, error error) {
-	var config = make(map[string]*string, 10)
-
-	resource := sarama.ConfigResource{Name: topic, Type: sarama.TopicResource}
-	entries, err := adminClient.DescribeConfig(resource)
-	if err != nil {
-		log.Printf("[ERROR] while retrieving the topic configuration for topic %s", topic)
-		return nil, err
-	}
-
-	for _, entry := range entries {
-		if !isDefault(entry) {
-			value := entry.Value
-			config[entry.Name] = &value
-		}
-	}
-	return config, nil
-}
-
-func isDefault(entry sarama.ConfigEntry) (isDefault bool) {
-	return entry.Default || entry.Source == sarama.SourceDefault || entry.Source == sarama.SourceStaticBroker
-}
-
 func (k *KafkaCluster) CreateTopic(ctx context.Context,
 	topicName string,
 	numPartitions int,
@@ -193,4 +189,98 @@ func (k *KafkaCluster) UpdateTopic(ctx context.Context, name string, config map[
 
 	err = adminClient.AlterConfig(sarama.TopicResource, name, entries, false)
 	return err
+}
+
+func (k KafkaCluster) IsAGroupAcl(acl sarama.ResourceAcls) bool {
+	return acl.ResourceType == sarama.AclResourceGroup
+}
+
+func (k KafkaCluster) IsATopicAcl(acl sarama.ResourceAcls) bool {
+	return acl.ResourceType == sarama.AclResourceTopic
+}
+
+func (k *KafkaCluster) CreateConsumerAcl(consumerAcl ConsumerAcl) (*ConsumerAcl, error) {
+	adminClient, err := k.newAdminClient()
+	if err != nil {
+		log.Printf("[ERROR] Error connecting to Kafka %s", k.BootstrapServers)
+		return nil, err
+	}
+	defer adminClient.Close()
+
+	resource := sarama.Resource{
+		ResourceName:        consumerAcl.Project,
+		ResourceType:        sarama.AclResourceTopic,
+		ResourcePatternType: sarama.AclPatternPrefixed,
+	}
+
+	operations := []sarama.AclOperation{sarama.AclOperationDescribe, sarama.AclOperationRead}
+
+	for _, operation := range operations {
+		acl := sarama.Acl{
+			Principal:      consumerAcl.Principal,
+			Host:           "*",
+			Operation:      operation,
+			PermissionType: sarama.AclPermissionAllow,
+		}
+		adminClient.CreateACL(resource, acl)
+	}
+
+	resource = sarama.Resource{
+		ResourceName:        consumerAcl.Group,
+		ResourceType:        sarama.AclResourceGroup,
+		ResourcePatternType: sarama.AclPatternLiteral,
+	}
+
+	acl := sarama.Acl{
+		Principal:      consumerAcl.Principal,
+		Host:           "*",
+		Operation:      sarama.AclOperationRead,
+		PermissionType: sarama.AclPermissionAllow,
+	}
+
+	adminClient.CreateACL(resource, acl)
+
+	return &consumerAcl, nil
+}
+
+func (k *KafkaCluster) DeleteConsumerAcl(consumerAcl ConsumerAcl) error {
+	adminClient, err := k.newAdminClient()
+	if err != nil {
+		log.Printf("[ERROR] Error connecting to Kafka %s", k.BootstrapServers)
+		return err
+	}
+	defer adminClient.Close()
+
+	var filter = sarama.AclFilter{
+		ResourceName: &consumerAcl.Project,
+		ResourceType: sarama.AclResourceTopic,
+		Principal:    &consumerAcl.Principal,
+	}
+	adminClient.DeleteACL(filter, false)
+
+	var filterGroup = sarama.AclFilter{
+		ResourceName: &consumerAcl.Group,
+		ResourceType: sarama.AclResourceGroup,
+		Principal:    &consumerAcl.Principal,
+	}
+	adminClient.DeleteACL(filterGroup, false)
+
+	return nil
+}
+
+func (k KafkaCluster) ListAcls(principal string) ([]sarama.ResourceAcls, error) {
+
+	adminClient, err := k.newAdminClient()
+	if err != nil {
+		log.Printf("[ERROR] Error connecting to Kafka %s", k.BootstrapServers)
+		return nil, err
+	}
+	defer adminClient.Close()
+
+	filter := sarama.AclFilter{
+		ResourceType: sarama.AclResourceAny,
+		Principal:    &principal,
+	}
+
+	return adminClient.ListAcls(filter)
 }

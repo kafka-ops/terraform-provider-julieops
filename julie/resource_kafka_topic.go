@@ -50,7 +50,7 @@ func resourceKafkaTopic() *schema.Resource {
 
 func resourceKafkaTopicCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	c := m.(*client.KafkaCluster)
-	t := interfaceAsTopic(d, m)
+	t := interfaceAsTopic(d)
 
 	topic, err := c.CreateTopic(ctx, t.Name, t.NumPartitions, t.ReplicationFactor, t.Config)
 
@@ -88,7 +88,7 @@ func resourceKafkaTopicUpdate(ctx context.Context, d *schema.ResourceData, m int
 
 	c := m.(*client.KafkaCluster)
 
-	t := interfaceAsTopic(d, m)
+	t := interfaceAsTopic(d)
 	log.Printf("DEBUG resourceKafkaTopicUpdate: name=%s config.keys=%s", t.Name, reflect.ValueOf(t.Config).MapKeys())
 	err := c.UpdateTopic(ctx, t.Name, t.Config)
 
