@@ -5,6 +5,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"log"
+	"reflect"
 	"terraform-provider-julieops/julie/client"
 )
 
@@ -65,19 +66,19 @@ func resourceKafkaTopicRead(ctx context.Context, d *schema.ResourceData, m inter
 	name := d.Id()
 	c := m.(*client.KafkaCluster)
 
-	topic, err := c.ListTopics(ctx, &name, false)
+	topic, err := c.ListTopics(ctx, name)
 
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	log.Printf("DEBUG resourceKafkaTopicRead: name= %s, topic= %s, len= %d", name, topic[1].Name, len(topic))
+	log.Printf("DEBUG resourceKafkaTopicRead: name= %s, topic= %s, len= %d", name, topic[0].Name, len(topic))
 	if len(topic) > 0 {
-		d.Set("name", topic[1].Name)
-		d.Set("partitions", topic[1].NumPartitions)
-		d.Set("replication_factor", topic[1].ReplicationFactor)
-		d.Set("config", topic[1].Config)
-		d.SetId(topic[1].Name)
+		d.Set("name", topic[0].Name)
+		d.Set("partitions", topic[0].NumPartitions)
+		d.Set("replication_factor", topic[0].ReplicationFactor)
+		d.Set("config", topic[0].Config)
+		d.SetId(topic[0].Name)
 	}
 
 	return nil
@@ -88,7 +89,7 @@ func resourceKafkaTopicUpdate(ctx context.Context, d *schema.ResourceData, m int
 	c := m.(*client.KafkaCluster)
 
 	t := interfaceAsTopic(d, m)
-	log.Printf("DEBUG resourceKafkaTopicUpdate: name=%s config=%s", t.Name, t.Config)
+	log.Printf("DEBUG resourceKafkaTopicUpdate: name=%s config.keys=%s", t.Name, reflect.ValueOf(t.Config).MapKeys())
 	err := c.UpdateTopic(ctx, t.Name, t.Config)
 
 	if err != nil {

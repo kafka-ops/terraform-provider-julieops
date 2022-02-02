@@ -110,10 +110,7 @@ func testAccKafkaTopicDelete(s *terraform.State) error {
 			continue
 		}
 		topicName := rs.Primary.Attributes["name"]
-		err := c.DeleteTopic(ctx, topicName)
-		if err != nil {
-			return err
-		}
+		c.DeleteTopic(ctx, topicName)
 	}
 	return nil
 }

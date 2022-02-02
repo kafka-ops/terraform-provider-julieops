@@ -54,7 +54,7 @@ func dataSourceKafkaTopicsRead(ctx context.Context, d *schema.ResourceData, m in
 
 	cluster := m.(*client.KafkaCluster)
 
-	topics, err := cluster.ListTopics(ctx, &name, false)
+	topics, err := cluster.ListTopics(ctx, name)
 	if err != nil {
 		return diag.FromErr(err)
 	}

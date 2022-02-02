@@ -13,14 +13,14 @@ func interfaceAsTopic(d *schema.ResourceData, _interface interface{}) client.Top
 	replicationFactor := d.Get("replication_factor").(int)
 	config := d.Get("config").(map[string]interface{})
 
-	mapConfig := make(map[string]string)
+	mapConfig := make(map[string]*string)
 	for k, v := range config {
 		switch v := v.(type) {
 		case string:
-			mapConfig[k] = v
+			log.Printf("interfaceAsTopic: config.key = %s, config.value = %s", k, v)
+			mapConfig[k] = &v
 		}
 	}
-	log.Printf("interfaceAsTopic, config = %s", mapConfig)
 	return client.Topic{
 		Name:              name,
 		ReplicationFactor: replicationFactor,
