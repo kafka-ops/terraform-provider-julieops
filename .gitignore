@@ -1,5 +1,5 @@
 .idea/
 vendor/
 .terraform*
-examples/terraform.tfstate
+examples/terraform.tfstate*
 terraform-provider-julieops
