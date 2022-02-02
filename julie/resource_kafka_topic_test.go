@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-func TestAccKafkaTopicRead(t *testing.T) {
+func TestAccKafkaTopicCreateWithoutConfig(t *testing.T) {
 	topicName := "foo"
 	resource.Test(t, resource.TestCase{
 		Providers: testAccProviders,
@@ -21,7 +21,7 @@ func TestAccKafkaTopicRead(t *testing.T) {
 			{
 				Config: cfg(bootstrapServersFromEnv(), fmt.Sprintf(testResourceTopic_noConfig, topicName)),
 				Check: resource.ComposeTestCheckFunc(
-					testAccKafkaTopicExist("julieops_kafka_topic.test"),
+					testAccKafkaTopicExist("julieops_kafka_topic.test", ""),
 				),
 				ExpectNonEmptyPlan: false,
 			},
@@ -39,9 +39,36 @@ func TestAccKafkaTopicCreateWithConfig(t *testing.T) {
 		CheckDestroy: testAccKafkaTopicDelete,
 		Steps: []resource.TestStep{
 			{
-				Config: cfg(bootstrapServersFromEnv(), fmt.Sprintf(testResourceTopic_simpleConfig, topicName)),
+				Config: cfg(bootstrapServersFromEnv(), fmt.Sprintf(testResourceTopic_simpleConfig, topicName, "42")),
 				Check: resource.ComposeTestCheckFunc(
-					testAccKafkaTopicExist("julieops_kafka_topic.test_config"),
+					testAccKafkaTopicExist("julieops_kafka_topic.test_config", "42"),
+				),
+				ExpectNonEmptyPlan: false,
+			},
+		},
+	})
+}
+
+func TestAccKafkaTopicConfigUpdate(t *testing.T) {
+	topicName := "foo.config.update"
+	resource.Test(t, resource.TestCase{
+		Providers: testAccProviders,
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		CheckDestroy: testAccKafkaTopicDelete,
+		Steps: []resource.TestStep{
+			{
+				Config: cfg(bootstrapServersFromEnv(), fmt.Sprintf(testResourceTopic_simpleConfig, topicName, "42")),
+				Check: resource.ComposeTestCheckFunc(
+					testAccKafkaTopicExist("julieops_kafka_topic.test_config", "42"),
+				),
+				ExpectNonEmptyPlan: false,
+			},
+			{
+				Config: cfg(bootstrapServersFromEnv(), fmt.Sprintf(testResourceTopic_simpleConfig, topicName, "24")),
+				Check: resource.ComposeTestCheckFunc(
+					testAccKafkaTopicExist("julieops_kafka_topic.test_config", "24"),
 				),
 				ExpectNonEmptyPlan: false,
 			},
@@ -63,7 +90,7 @@ resource "julieops_kafka_topic" "test_config" {
   replication_factor = 1
   partitions         = 1
   config = {
-    "retention.ms": "604800000"
+    "retention.ms": "%s"
   }
 }
 `
@@ -91,7 +118,7 @@ func testAccKafkaTopicDelete(s *terraform.State) error {
 	return nil
 }
 
-func testAccKafkaTopicExist(topicName string) resource.TestCheckFunc {
+func testAccKafkaTopicExist(topicName string, retentionMsValue string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		resource, ok := s.RootModule().Resources[topicName]
 		if !ok {
@@ -110,7 +137,7 @@ func testAccKafkaTopicExist(topicName string) resource.TestCheckFunc {
 			return fmt.Errorf("topic %s with unexpected replicationFactor number %s", topicName, replicationFactor)
 		}
 
-		if config != "" && config != "604800000" {
+		if config != "" && config != retentionMsValue {
 			return fmt.Errorf("topic %s with unexpected config retentino.ms %s", topicName, config)
 		}
 
