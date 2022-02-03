@@ -11,6 +11,15 @@ import (
 
 type KafkaCluster struct {
 	BootstrapServers []string
+	Config           Config
+}
+
+type Config struct {
+	BootstrapServers []string
+	IsSaslEnabled    bool
+	SaslUsername     string
+	SaslPassword     string
+	SaslMechanism    string
 }
 
 type Topic struct {
@@ -38,24 +47,43 @@ func NewConsumerAcl(project string, principal string, group string, metadata map
 	}
 }
 
-func NewKafkaCluster(bootstrapServers string) *KafkaCluster {
-	return &KafkaCluster{BootstrapServers: []string{bootstrapServers}}
+func NewKafkaCluster(bootstrapServers string, config Config) *KafkaCluster {
+	return &KafkaCluster{BootstrapServers: []string{bootstrapServers}, Config: config}
 }
 
-func newConfig() (*sarama.Config, error) {
+func (c *Config) newConfig() (*sarama.Config, error) {
 	config := sarama.NewConfig()
 	config.Version = sarama.V3_0_0_0
 	config.ClientID = "terraform-provider-julieops"
 	config.Admin.Timeout = time.Duration(60) * time.Second
 
 	// if saslEnabled
+	if c.IsSaslEnabled {
+		switch c.SaslMechanism {
+		case "scram-sha512":
+			config.Net.SASL.SCRAMClientGeneratorFunc = func() sarama.SCRAMClient { return &XDGSCRAMClient{HashGeneratorFcn: SHA512} }
+			config.Net.SASL.Mechanism = sarama.SASLMechanism(sarama.SASLTypeSCRAMSHA512)
+		case "scram-sha256":
+			config.Net.SASL.SCRAMClientGeneratorFunc = func() sarama.SCRAMClient { return &XDGSCRAMClient{HashGeneratorFcn: SHA256} }
+			config.Net.SASL.Mechanism = sarama.SASLMechanism(sarama.SASLTypeSCRAMSHA256)
+		case "plain":
+		default:
+			log.Fatalf("[ERROR] Invalid sasl mechanism \"%s\": can only be \"scram-sha256\", \"scram-sha512\" or \"plain\"", c.SaslMechanism)
+		}
+		config.Net.SASL.Enable = true
+		config.Net.SASL.Password = c.SaslPassword
+		config.Net.SASL.User = c.SaslUsername
+		config.Net.SASL.Handshake = true
+	} else {
+		log.Printf("[WARN] SASL disabled username: '%s', password '%s'", c.SaslUsername, "****")
+	}
 
 	// if tlsIsEnabled
 	return config, nil
 }
 
 func (k KafkaCluster) newAdminClient() (sarama.ClusterAdmin, error) {
-	var config, err = newConfig()
+	var config, err = k.Config.newConfig()
 	if err != nil {
 		//TODO: Log the error
 		return nil, err
@@ -251,20 +279,40 @@ func (k *KafkaCluster) DeleteConsumerAcl(consumerAcl ConsumerAcl) error {
 	}
 	defer adminClient.Close()
 
-	var filter = sarama.AclFilter{
-		ResourceName: &consumerAcl.Project,
-		ResourceType: sarama.AclResourceTopic,
-		Principal:    &consumerAcl.Principal,
+	var ops = []sarama.AclOperation{sarama.AclOperationDescribe, sarama.AclOperationRead}
+	for op := range ops {
+		var filter = sarama.AclFilter{
+			ResourceName:              &consumerAcl.Project,
+			ResourceType:              sarama.AclResourceTopic,
+			Principal:                 &consumerAcl.Principal,
+			Operation:                 sarama.AclOperation(op),
+			PermissionType:            sarama.AclPermissionAllow,
+			ResourcePatternTypeFilter: sarama.AclPatternPrefixed,
+		}
+		log.Printf("[DEBUG] Deleting ACL(s) for filter %o", filter)
+		m, err := adminClient.DeleteACL(filter, false)
+		log.Printf("[DEBUG] Deleted ACL(s) %d", len(m))
+		if err != nil {
+			log.Printf("[ERROR] Error deleting ACLs from Kafka %s", k.BootstrapServers)
+			return err
+		}
 	}
-	adminClient.DeleteACL(filter, false)
 
 	var filterGroup = sarama.AclFilter{
-		ResourceName: &consumerAcl.Group,
-		ResourceType: sarama.AclResourceGroup,
-		Principal:    &consumerAcl.Principal,
+		ResourceName:              &consumerAcl.Group,
+		ResourceType:              sarama.AclResourceGroup,
+		Principal:                 &consumerAcl.Principal,
+		Operation:                 sarama.AclOperationRead,
+		PermissionType:            sarama.AclPermissionAllow,
+		ResourcePatternTypeFilter: sarama.AclPatternLiteral,
 	}
-	adminClient.DeleteACL(filterGroup, false)
-
+	log.Printf("[DEBUG] Deleting ACL(s) for filter %o", filterGroup)
+	m, err := adminClient.DeleteACL(filterGroup, false)
+	log.Printf("[DEBUG] Deleted ACL(s) %d", len(m))
+	if err != nil {
+		log.Printf("[ERROR] Error deleting ACLs from Kafka %s", k.BootstrapServers)
+		return err
+	}
 	return nil
 }
 

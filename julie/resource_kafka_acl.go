@@ -64,6 +64,8 @@ func resourceKafkaConsumerCreate(ctx context.Context, d *schema.ResourceData, m 
 
 func resourceKafkaConsumerRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	c := m.(*client.KafkaCluster)
+	log.Printf("[DEBUG] consumerAclRead: consumerAcl=%s", d.Id())
+
 	consumerAcl := resourceAsConsumerAcl(d)
 
 	foundAcls, err := c.ListAcls(consumerAcl.Principal)
@@ -117,6 +119,8 @@ func resourceKafkaConsumerDelete(ctx context.Context, d *schema.ResourceData, m 
 
 	c := m.(*client.KafkaCluster)
 	acl := resourceAsConsumerAcl(d)
+
+	log.Printf("[DEBUG] Deleting consumer ACL(s) for %s", acl)
 
 	err := c.DeleteConsumerAcl(acl)
 

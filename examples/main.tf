@@ -8,7 +8,10 @@ terraform {
 }
 
 provider "julieops" {
-  bootstrap_servers = "localhost:29092"
+  bootstrap_servers = "localhost:9092"
+  sasl_username = "kafka"
+  sasl_password = "kafka"
+  sasl_mechanism = "plain"
 }
 
 
@@ -29,7 +32,6 @@ resource "julieops_kafka_acl_consumer" "consumer" {
     "foo" = "bar"
   }
 }
-
 
 /*
 data "julieops_kafka_topic" "all" {

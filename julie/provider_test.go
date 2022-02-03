@@ -68,10 +68,13 @@ func overrideProvider() (*schema.Provider, error) {
 func accTestProviderConfig() (*terraform.ResourceConfig, error) {
 	raw := map[string]interface{}{
 		"bootstrap_servers": bootstrapServersFromEnv(),
+		"sasl_username":     "kafka",
+		"sasl_password":     "kafka",
+		"sasl_mechanism":    "plain",
 	}
 	return terraform.NewResourceConfigRaw(raw), nil
 }
 
 func bootstrapServersFromEnv() string {
-	return "localhost:29092"
+	return "localhost:9092"
 }
