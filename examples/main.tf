@@ -24,7 +24,7 @@ resource "julieops_kafka_topic" "custom_topic" {
   }
 }
 
-resource "julieops_kafka_acl_consumer" "consumer" {
+resource "julieops_kafka_consumer_acl" "consumer" {
   project = "context.project"
   principal = "User:bar"
   group = "*"

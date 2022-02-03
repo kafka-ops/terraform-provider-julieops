@@ -20,7 +20,7 @@ func TestAccKafkaAclCreate(t *testing.T) {
 			{
 				Config: cfg(bootstrapServersFromEnv(), fmt.Sprintf(testResourceAcl_noConfig, project)),
 				Check: resource.ComposeTestCheckFunc(
-					testAccKafkaAclExist("julieops_kafka_acl_consumer.consumer", "User:bar"),
+					testAccKafkaAclExist("julieops_kafka_consumer_acl.consumer", "User:bar"),
 				),
 				ExpectNonEmptyPlan: false,
 			},
@@ -29,7 +29,7 @@ func TestAccKafkaAclCreate(t *testing.T) {
 }
 
 const testResourceAcl_noConfig = `
-resource "julieops_kafka_acl_consumer" "consumer" {
+resource "julieops_kafka_consumer_acl" "consumer" {
   project = "%s"
   principal = "User:bar"
   group = "*"
@@ -43,7 +43,7 @@ func testAccKafkaAclDelete(s *terraform.State) error {
 	c := testProvider.Meta().(*client.KafkaCluster)
 
 	for _, rs := range s.RootModule().Resources {
-		if rs.Type != "julieops_kafka_acl_consumer" {
+		if rs.Type != "julieops_kafka_consumer_acl" {
 			continue
 		}
 		project := rs.Primary.Attributes["project"]

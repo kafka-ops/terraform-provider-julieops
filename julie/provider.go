@@ -34,7 +34,7 @@ func Provider() *schema.Provider {
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"julieops_kafka_topic":        resourceKafkaTopic(),
-			"julieops_kafka_acl_consumer": resourceKafkaConsumerAcl(),
+			"julieops_kafka_consumer_acl": resourceKafkaConsumerAcl(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
 			"julieops_kafka_topic": dataSourceKafkaTopics(),
