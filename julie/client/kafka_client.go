@@ -47,6 +47,26 @@ func NewConsumerAcl(project string, principal string, group string, metadata map
 	}
 }
 
+type KafkaStreamsAcl struct {
+	Id          string
+	Project     string
+	Principal   string
+	ReadTopics  []string
+	WriteTopics []string
+	Metadata    map[string]string
+}
+
+func NewKafkaStreamsAcl(project string, principal string, readTopics []string, writeTopics []string, metadata map[string]string) *KafkaStreamsAcl {
+	return &KafkaStreamsAcl{
+		Id:          fmt.Sprintf("%s#%s", project, principal),
+		Project:     project,
+		Principal:   principal,
+		ReadTopics:  readTopics,
+		WriteTopics: writeTopics,
+		Metadata:    metadata,
+	}
+}
+
 func NewKafkaCluster(bootstrapServers string, config Config) *KafkaCluster {
 	return &KafkaCluster{BootstrapServers: []string{bootstrapServers}, Config: config}
 }
@@ -311,6 +331,115 @@ func (k *KafkaCluster) DeleteConsumerAcl(consumerAcl ConsumerAcl) error {
 	log.Printf("[DEBUG] Deleted ACL(s) %d", len(m))
 	if err != nil {
 		log.Printf("[ERROR] Error deleting ACLs from Kafka %s", k.BootstrapServers)
+		return err
+	}
+	return nil
+}
+
+func (k *KafkaCluster) CreateKafkaStreamsAcl(kStreamsAcl KafkaStreamsAcl) (*KafkaStreamsAcl, error) {
+	adminClient, err := k.newAdminClient()
+	if err != nil {
+		log.Printf("[ERROR] Error connecting to Kafka %s", k.BootstrapServers)
+		return nil, err
+	}
+	defer adminClient.Close()
+
+	resources, acls := createTopicAcls(kStreamsAcl.ReadTopics, kStreamsAcl.Principal, sarama.AclOperationRead)
+	for i, resource := range resources {
+		adminClient.CreateACL(resource, acls[i])
+	}
+
+	resources, acls = createTopicAcls(kStreamsAcl.WriteTopics, kStreamsAcl.Principal, sarama.AclOperationWrite)
+	for i, resource := range resources {
+		adminClient.CreateACL(resource, acls[i])
+	}
+
+	resource, acl := createKStreamAcl(kStreamsAcl.Project, kStreamsAcl.Principal, sarama.AclResourceTopic, sarama.AclOperationAll)
+	adminClient.CreateACL(resource, acl)
+	resource, acl = createKStreamAcl(kStreamsAcl.Project, kStreamsAcl.Principal, sarama.AclResourceGroup, sarama.AclOperationRead)
+	adminClient.CreateACL(resource, acl)
+
+	return &kStreamsAcl, nil
+}
+
+func createKStreamAcl(project string, principal string, resourceType sarama.AclResourceType, op sarama.AclOperation) (sarama.Resource, sarama.Acl) {
+	resource := sarama.Resource{
+		ResourceName:        project,
+		ResourceType:        resourceType,
+		ResourcePatternType: sarama.AclPatternPrefixed,
+	}
+
+	acl := sarama.Acl{
+		Principal:      principal,
+		Host:           "*",
+		Operation:      op,
+		PermissionType: sarama.AclPermissionAllow,
+	}
+	return resource, acl
+}
+
+func createTopicAcls(topics []string, principal string, op sarama.AclOperation) ([]sarama.Resource, []sarama.Acl) {
+	var resources = make([]sarama.Resource, len(topics))
+	var acls = make([]sarama.Acl, len(topics))
+
+	for i, topic := range topics {
+
+		resources[i] = sarama.Resource{
+			ResourceName:        topic,
+			ResourceType:        sarama.AclResourceTopic,
+			ResourcePatternType: sarama.AclPatternLiteral,
+		}
+
+		acls[i] = sarama.Acl{
+			Principal:      principal,
+			Host:           "*",
+			Operation:      op,
+			PermissionType: sarama.AclPermissionAllow,
+		}
+	}
+	return resources, acls
+}
+
+func (k *KafkaCluster) DeleteKafkaStreamsAcl(kStreamsAcl KafkaStreamsAcl) error {
+	adminClient, err := k.newAdminClient()
+	if err != nil {
+		log.Printf("[ERROR] Error connecting to Kafka %s", k.BootstrapServers)
+		return err
+	}
+	defer adminClient.Close()
+
+	resources, acls := createTopicAcls(kStreamsAcl.ReadTopics, kStreamsAcl.Principal, sarama.AclOperationRead)
+	for i, resource := range resources {
+		deleteAcl(adminClient, resource, acls[i])
+	}
+
+	resources, acls = createTopicAcls(kStreamsAcl.WriteTopics, kStreamsAcl.Principal, sarama.AclOperationWrite)
+	for i, resource := range resources {
+		deleteAcl(adminClient, resource, acls[i])
+	}
+
+	resource, acl := createKStreamAcl(kStreamsAcl.Project, kStreamsAcl.Principal, sarama.AclResourceTopic, sarama.AclOperationAll)
+	deleteAcl(adminClient, resource, acl)
+	resource, acl = createKStreamAcl(kStreamsAcl.Project, kStreamsAcl.Principal, sarama.AclResourceGroup, sarama.AclOperationRead)
+	deleteAcl(adminClient, resource, acl)
+
+	return nil
+}
+
+func deleteAcl(adminClient sarama.ClusterAdmin, resource sarama.Resource, acl sarama.Acl) error {
+	var filter = sarama.AclFilter{
+		ResourceName:              &resource.ResourceName,
+		ResourceType:              resource.ResourceType,
+		Principal:                 &acl.Principal,
+		Operation:                 acl.Operation,
+		PermissionType:            acl.PermissionType,
+		ResourcePatternTypeFilter: resource.ResourcePatternType,
+	}
+	log.Printf("[DEBUG] Deleting ACL(s) for filter %o", filter)
+	m, err := adminClient.DeleteACL(filter, false)
+	log.Printf("[DEBUG] Deleted ACL(s) %d", len(m))
+	if err != nil {
+		log.Printf("[ERROR] Error deleting ACLs %s", err.Error())
 		return err
 	}
 	return nil

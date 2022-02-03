@@ -33,6 +33,16 @@ resource "julieops_kafka_consumer_acl" "consumer" {
   }
 }
 
+resource "julieops_kafka_streams_acl" "kstreams" {
+  project = "context.project"
+  principal = "User:streams"
+  read_topics = [ "foo" ]
+  write_topics = [ "bar" ]
+  metadata = {
+    "foo" = "bar"
+  }
+}
+
 /*
 data "julieops_kafka_topic" "all" {
   name = "_schemas"

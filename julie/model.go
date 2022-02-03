@@ -48,3 +48,38 @@ func resourceAsConsumerAcl(d *schema.ResourceData) client.ConsumerAcl {
 
 	return *client.NewConsumerAcl(project, principal, group, metaMap)
 }
+
+func resourceAsKafkaStreamsAcl(d *schema.ResourceData) client.KafkaStreamsAcl {
+	project := d.Get("project").(string)
+	principal := d.Get("principal").(string)
+	readTopics := d.Get("read_topics").([]interface{})
+	writeTopics := d.Get("write_topics").([]interface{})
+
+	metadata := d.Get("metadata").(map[string]interface{})
+
+	metaMap := make(map[string]string)
+	for k, v := range metadata {
+		switch v := v.(type) {
+		case string:
+			log.Printf("[DEBUG] resourceAsConsumerAcl: config.key = %s, config.value = %s", k, v)
+			metaMap[k] = v
+		}
+	}
+
+	readTopicsArray := interfaceArrayAsSlice(readTopics)
+	writeTopicsArray := interfaceArrayAsSlice(writeTopics)
+
+	return *client.NewKafkaStreamsAcl(project, principal, readTopicsArray, writeTopicsArray, metaMap)
+}
+
+func interfaceArrayAsSlice(topics []interface{}) []string {
+	topicsArray := make([]string, len(topics))
+	for i, topic := range topics {
+		switch v := topic.(type) {
+		case string:
+			log.Printf("[DEBUG] resourceAsKafkaStreamsAcl: topics.key = %d, topics.value = %s", i, topic)
+			topicsArray[i] = v
+		}
+	}
+	return topicsArray
+}
