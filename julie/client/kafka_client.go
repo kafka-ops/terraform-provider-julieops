@@ -247,6 +247,20 @@ func (k KafkaCluster) IsATopicAcl(acl sarama.ResourceAcls) bool {
 	return acl.ResourceType == sarama.AclResourceTopic
 }
 
+func (k *KafkaCluster) ApplyAcls(resources AclResources) error {
+	adminClient, err := k.newAdminClient()
+	if err != nil {
+		log.Printf("[ERROR] Error connecting to Kafka %s", k.BootstrapServers)
+		return err
+	}
+	defer adminClient.Close()
+
+	for _, resource := range resources.Resources {
+		adminClient.CreateACL(resource.Resource, resource.Acl)
+	}
+	return nil
+}
+
 func (k *KafkaCluster) CreateConsumerAcl(consumerAcl ConsumerAcl) (*ConsumerAcl, error) {
 	adminClient, err := k.newAdminClient()
 	if err != nil {

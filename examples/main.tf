@@ -43,14 +43,13 @@ resource "julieops_kafka_streams_acl" "kstreams" {
   }
 }
 
-/*
-data "julieops_kafka_topic" "all" {
+data "julieops_kafka_topic" "schemas" {
   name = "_schemas"
 }
 
 output "all_topics" {
-  value = data.julieops_kafka_topic.all
-}*/
+  value = data.julieops_kafka_topic.schemas
+}
 
 output "custom_topic" {
   value = julieops_kafka_topic.custom_topic

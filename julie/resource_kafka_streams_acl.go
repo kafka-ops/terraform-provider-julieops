@@ -59,17 +59,17 @@ func resourceKafkaStreamsAcl() *schema.Resource {
 }
 
 func resourceKafkaStreamsCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	c := m.(*client.KafkaCluster)
-	acl := resourceAsKafkaStreamsAcl(d)
+	kafkaClient := m.(*client.KafkaCluster)
+	builder := client.KafkaAclsBuilder{
+		Client: kafkaClient,
+	}
 
-	kstreamsAcl, err := c.CreateKafkaStreamsAcl(acl)
-
+	aclInterface, err := funcCreateAcl(kafkaClient, builder, d, resourceAsKafkaStreamsAcl, builder.KafkaStreamsAclsBuilder)
 	if err != nil {
 		return diag.FromErr(err)
 	}
-
-	d.SetId(kstreamsAcl.Id)
-
+	acl := aclInterface.(client.KafkaStreamsAcl)
+	d.SetId(acl.Id)
 	return nil
 }
 
@@ -77,7 +77,7 @@ func resourceKafkaStreamsRead(ctx context.Context, d *schema.ResourceData, m int
 	c := m.(*client.KafkaCluster)
 	log.Printf("[DEBUG] consumerAclRead: kStreamAcl=%s", d.Id())
 
-	kStreamAcl := resourceAsKafkaStreamsAcl(d)
+	kStreamAcl := resourceAsKafkaStreamsAcl(d).(client.KafkaStreamsAcl)
 
 	foundAcls, err := c.ListAcls(kStreamAcl.Principal)
 	if err != nil {
@@ -128,7 +128,7 @@ func resourceKafkaStreamsRead(ctx context.Context, d *schema.ResourceData, m int
 
 func resourceKafkaStreamsUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	c := m.(*client.KafkaCluster)
-	acl := resourceAsKafkaStreamsAcl(d)
+	acl := resourceAsKafkaStreamsAcl(d).(client.KafkaStreamsAcl)
 
 	_, err := c.CreateKafkaStreamsAcl(acl)
 
@@ -143,7 +143,7 @@ func resourceKafkaStreamsDelete(ctx context.Context, d *schema.ResourceData, m i
 	var diags diag.Diagnostics
 
 	c := m.(*client.KafkaCluster)
-	acl := resourceAsKafkaStreamsAcl(d)
+	acl := resourceAsKafkaStreamsAcl(d).(client.KafkaStreamsAcl)
 
 	log.Printf("[DEBUG] Deleting Kafka Streams ACL(s) for %s", acl)
 

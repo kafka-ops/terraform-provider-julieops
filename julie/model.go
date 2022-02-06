@@ -29,7 +29,7 @@ func interfaceAsTopic(d *schema.ResourceData) client.Topic {
 	}
 }
 
-func resourceAsConsumerAcl(d *schema.ResourceData) client.ConsumerAcl {
+func resourceAsConsumerAcl(d *schema.ResourceData) interface{} {
 
 	project := d.Get("project").(string)
 	principal := d.Get("principal").(string)
@@ -49,7 +49,7 @@ func resourceAsConsumerAcl(d *schema.ResourceData) client.ConsumerAcl {
 	return *client.NewConsumerAcl(project, principal, group, metaMap)
 }
 
-func resourceAsKafkaStreamsAcl(d *schema.ResourceData) client.KafkaStreamsAcl {
+func resourceAsKafkaStreamsAcl(d *schema.ResourceData) interface{} {
 	project := d.Get("project").(string)
 	principal := d.Get("principal").(string)
 	readTopics := d.Get("read_topics").([]interface{})

@@ -48,17 +48,17 @@ func resourceKafkaConsumerAcl() *schema.Resource {
 }
 
 func resourceKafkaConsumerCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	c := m.(*client.KafkaCluster)
-	acl := resourceAsConsumerAcl(d)
+	kafkaClient := m.(*client.KafkaCluster)
+	builder := client.KafkaAclsBuilder{
+		Client: kafkaClient,
+	}
 
-	consumerAcl, err := c.CreateConsumerAcl(acl)
-
+	aclInterface, err := funcCreateAcl(kafkaClient, builder, d, resourceAsConsumerAcl, builder.ConsumerAclsBuilder)
 	if err != nil {
 		return diag.FromErr(err)
 	}
-
-	d.SetId(consumerAcl.Id)
-
+	acl := aclInterface.(client.ConsumerAcl)
+	d.SetId(acl.Id)
 	return nil
 }
 
@@ -66,7 +66,7 @@ func resourceKafkaConsumerRead(ctx context.Context, d *schema.ResourceData, m in
 	c := m.(*client.KafkaCluster)
 	log.Printf("[DEBUG] consumerAclRead: consumerAcl=%s", d.Id())
 
-	consumerAcl := resourceAsConsumerAcl(d)
+	consumerAcl := resourceAsConsumerAcl(d).(client.ConsumerAcl)
 
 	foundAcls, err := c.ListAcls(consumerAcl.Principal)
 	if err != nil {
@@ -103,7 +103,7 @@ func resourceKafkaConsumerRead(ctx context.Context, d *schema.ResourceData, m in
 
 func resourceKafkaConsumerUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	c := m.(*client.KafkaCluster)
-	acl := resourceAsConsumerAcl(d)
+	acl := resourceAsConsumerAcl(d).(client.ConsumerAcl)
 
 	_, err := c.CreateConsumerAcl(acl)
 
@@ -118,7 +118,7 @@ func resourceKafkaConsumerDelete(ctx context.Context, d *schema.ResourceData, m 
 	var diags diag.Diagnostics
 
 	c := m.(*client.KafkaCluster)
-	acl := resourceAsConsumerAcl(d)
+	acl := resourceAsConsumerAcl(d).(client.ConsumerAcl)
 
 	log.Printf("[DEBUG] Deleting consumer ACL(s) for %s", acl)
 
