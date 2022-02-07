@@ -63,40 +63,20 @@ func resourceKafkaConsumerCreate(ctx context.Context, d *schema.ResourceData, m 
 }
 
 func resourceKafkaConsumerRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	c := m.(*client.KafkaCluster)
+	kafkaClient := m.(*client.KafkaCluster)
 	log.Printf("[DEBUG] consumerAclRead: consumerAcl=%s", d.Id())
 
+	builder := client.KafkaAclsBuilder{
+		Client: kafkaClient,
+	}
 	consumerAcl := resourceAsConsumerAcl(d).(client.ConsumerAcl)
 
-	foundAcls, err := c.ListAcls(consumerAcl.Principal)
+	foundAcls, err := kafkaClient.ListAcls(consumerAcl.Principal)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	for _, aclEntity := range foundAcls {
-		if aclEntity.ResourceName != consumerAcl.Project {
-			continue
-		}
-
-		if len(aclEntity.Acls) < 1 {
-			break
-		}
-		log.Printf("[INFO] ACL(s) found resource %s, acls.Count = %d", aclEntity.ResourceName, len(aclEntity.Acls))
-
-		for _, acl := range aclEntity.Acls {
-
-			if acl.Principal == consumerAcl.Principal {
-				d.Set("principal", acl.Principal)
-				if c.IsAGroupAcl(aclEntity) {
-					d.Set("group", aclEntity.ResourceName)
-				}
-				if c.IsATopicAcl(aclEntity) {
-					d.Set("project", aclEntity.ResourceName)
-				}
-				d.Set("metadata", consumerAcl.Metadata)
-			}
-		}
-	}
+	funcSelectAclsFor(d, foundAcls, kafkaClient, consumerAcl, builder.ConsumerAclShouldContinue, builder.ConsumerAclsParser)
 
 	return nil
 }

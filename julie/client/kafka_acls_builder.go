@@ -91,3 +91,73 @@ func (b KafkaAclsBuilder) KafkaStreamsAclsBuilder(aclInterface interface{}) (Acl
 	resourceInfos[i+1] = AclResourceInfo{Resource: resource, Acl: acl}
 	return AclResources{Resources: resourceInfos}, nil
 }
+
+func (b KafkaAclsBuilder) ConsumerAclsParser(client *KafkaCluster,
+	d *schema.ResourceData,
+	aclInterface interface{},
+	aclEntity sarama.ResourceAcls) error {
+
+	consumerAcl := aclInterface.(ConsumerAcl)
+
+	for _, acl := range aclEntity.Acls {
+		if acl.Principal == consumerAcl.Principal {
+			d.Set("principal", acl.Principal)
+			if client.IsAGroupAcl(aclEntity) {
+				d.Set("group", aclEntity.ResourceName)
+			}
+			if client.IsATopicAcl(aclEntity) {
+				d.Set("project", aclEntity.ResourceName)
+			}
+			d.Set("metadata", consumerAcl.Metadata)
+		}
+	}
+
+	return nil
+}
+
+func (b KafkaAclsBuilder) KafkaStreamsAclsParser(client *KafkaCluster,
+	d *schema.ResourceData,
+	aclInterface interface{},
+	aclEntity sarama.ResourceAcls) error {
+
+	kStreamAcl := aclInterface.(KafkaStreamsAcl)
+	readTopics := make([]string, 0)
+	writeTopics := make([]string, 0)
+
+	for _, acl := range aclEntity.Acls {
+
+		if acl.Principal == kStreamAcl.Principal {
+			d.Set("principal", acl.Principal)
+			if client.IsAGroupAcl(aclEntity) {
+				d.Set("group", aclEntity.ResourceName)
+			}
+			if client.IsATopicAcl(aclEntity) {
+				if aclEntity.ResourcePatternType == sarama.AclPatternPrefixed {
+					d.Set("project", aclEntity.ResourceName)
+				} else {
+					if acl.Operation == sarama.AclOperationRead {
+						readTopics = append(readTopics, aclEntity.ResourceName)
+					} else {
+						writeTopics = append(writeTopics, aclEntity.ResourceName)
+					}
+
+				}
+			}
+			d.Set("read_topics", readTopics)
+			d.Set("write_topics", writeTopics)
+			d.Set("metadata", kStreamAcl.Metadata)
+		}
+	}
+
+	return nil
+}
+
+func (b KafkaAclsBuilder) ConsumerAclShouldContinue(entity sarama.ResourceAcls, aclInterface interface{}) bool {
+	consumerAcl := aclInterface.(ConsumerAcl)
+	return entity.ResourceName != consumerAcl.Project
+}
+
+func (b KafkaAclsBuilder) KafkaStreamsAclShouldContinue(entity sarama.ResourceAcls, aclInterface interface{}) bool {
+	acl := aclInterface.(KafkaStreamsAcl)
+	return entity.ResourceName != acl.Project
+}

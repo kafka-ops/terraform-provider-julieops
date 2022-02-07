@@ -2,7 +2,6 @@ package julie
 
 import (
 	"context"
-	"github.com/Shopify/sarama"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"log"
@@ -74,7 +73,7 @@ func resourceKafkaStreamsCreate(ctx context.Context, d *schema.ResourceData, m i
 }
 
 func resourceKafkaStreamsRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	c := m.(*client.KafkaCluster)
+	/*c := m.(*client.KafkaCluster)
 	log.Printf("[DEBUG] consumerAclRead: kStreamAcl=%s", d.Id())
 
 	kStreamAcl := resourceAsKafkaStreamsAcl(d).(client.KafkaStreamsAcl)
@@ -121,7 +120,24 @@ func resourceKafkaStreamsRead(ctx context.Context, d *schema.ResourceData, m int
 				d.Set("metadata", kStreamAcl.Metadata)
 			}
 		}
+	}*/
+
+	kafkaClient := m.(*client.KafkaCluster)
+	log.Printf("[DEBUG] KafkaStreamsAclRead: kStreamAcl=%s", d.Id())
+
+	builder := client.KafkaAclsBuilder{
+		Client: kafkaClient,
 	}
+	kStreamAcl := resourceAsKafkaStreamsAcl(d).(client.KafkaStreamsAcl)
+
+	foundAcls, err := kafkaClient.ListAcls(kStreamAcl.Principal)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	funcSelectAclsFor(d, foundAcls, kafkaClient, kStreamAcl, builder.KafkaStreamsAclShouldContinue, builder.KafkaStreamsAclsParser)
+
+	return nil
 
 	return nil
 }
