@@ -73,55 +73,6 @@ func resourceKafkaStreamsCreate(ctx context.Context, d *schema.ResourceData, m i
 }
 
 func resourceKafkaStreamsRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	/*c := m.(*client.KafkaCluster)
-	log.Printf("[DEBUG] consumerAclRead: kStreamAcl=%s", d.Id())
-
-	kStreamAcl := resourceAsKafkaStreamsAcl(d).(client.KafkaStreamsAcl)
-
-	foundAcls, err := c.ListAcls(kStreamAcl.Principal)
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	for _, aclEntity := range foundAcls {
-		if aclEntity.ResourceName != kStreamAcl.Project {
-			continue
-		}
-
-		if len(aclEntity.Acls) < 1 {
-			break
-		}
-		log.Printf("[INFO] ACL(s) found resource %s, acls.Count = %d", aclEntity.ResourceName, len(aclEntity.Acls))
-
-		readTopics := make([]string, 0)
-		writeTopics := make([]string, 0)
-
-		for _, acl := range aclEntity.Acls {
-
-			if acl.Principal == kStreamAcl.Principal {
-				d.Set("principal", acl.Principal)
-				if c.IsAGroupAcl(aclEntity) {
-					d.Set("group", aclEntity.ResourceName)
-				}
-				if c.IsATopicAcl(aclEntity) {
-					if aclEntity.ResourcePatternType == sarama.AclPatternPrefixed {
-						d.Set("project", aclEntity.ResourceName)
-					} else {
-						if acl.Operation == sarama.AclOperationRead {
-							readTopics = append(readTopics, aclEntity.ResourceName)
-						} else {
-							writeTopics = append(writeTopics, aclEntity.ResourceName)
-						}
-
-					}
-				}
-				d.Set("read_topics", readTopics)
-				d.Set("write_topics", writeTopics)
-				d.Set("metadata", kStreamAcl.Metadata)
-			}
-		}
-	}*/
-
 	kafkaClient := m.(*client.KafkaCluster)
 	log.Printf("[DEBUG] KafkaStreamsAclRead: kStreamAcl=%s", d.Id())
 
