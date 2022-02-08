@@ -92,6 +92,80 @@ func (b KafkaAclsBuilder) KafkaStreamsAclsBuilder(aclInterface interface{}) (Acl
 	return AclResources{Resources: resourceInfos}, nil
 }
 
+func (b KafkaAclsBuilder) KafkaConnectAclsBuilder(aclInterface interface{}) (AclResources, error) {
+	kafkaConnectAcl := aclInterface.(KafkaConnectAcl)
+	numOfResourcesToBuild := GetNumberOfResourcesForKafkaConnect(kafkaConnectAcl)
+	resourceInfos := make([]AclResourceInfo, numOfResourcesToBuild)
+
+	i := 0
+	resources, acls := createTopicAcls(kafkaConnectAcl.ReadTopics, kafkaConnectAcl.Principal, sarama.AclOperationRead)
+	for j, resource := range resources {
+		resourceInfos[i] = AclResourceInfo{Resource: resource, Acl: acls[j]}
+		i = i + 1
+	}
+
+	resources, acls = createTopicAcls(kafkaConnectAcl.WriteTopics, kafkaConnectAcl.Principal, sarama.AclOperationWrite)
+	for j, resource := range resources {
+		resourceInfos[i] = AclResourceInfo{Resource: resource, Acl: acls[j]}
+		i = i + 1
+	}
+
+	managementTopics := []string{kafkaConnectAcl.OffsetTopic, kafkaConnectAcl.ConfigsTopic, kafkaConnectAcl.StatusTopic}
+
+	operations := []sarama.AclOperation{sarama.AclOperationWrite, sarama.AclOperationRead}
+
+	for _, operation := range operations {
+		resources, acls = createTopicAcls(managementTopics, kafkaConnectAcl.Principal, operation)
+		for j, resource := range resources {
+			resourceInfos[i] = AclResourceInfo{Resource: resource, Acl: acls[j]}
+			i = i + 1
+		}
+	}
+
+	if kafkaConnectAcl.EnableTopicCreate {
+		resource := sarama.Resource{
+			ResourceName:        "kafka-cluster",
+			ResourceType:        sarama.AclResourceCluster,
+			ResourcePatternType: sarama.AclPatternLiteral,
+		}
+
+		acl := sarama.Acl{
+			Principal:      kafkaConnectAcl.Principal,
+			Host:           "*",
+			Operation:      sarama.AclOperationCreate,
+			PermissionType: sarama.AclPermissionAllow,
+		}
+		resourceInfos[i] = AclResourceInfo{Resource: resource, Acl: acl}
+		i = i + 1
+	}
+
+	resource := sarama.Resource{
+		ResourceName:        kafkaConnectAcl.Group,
+		ResourceType:        sarama.AclResourceGroup,
+		ResourcePatternType: sarama.AclPatternLiteral,
+	}
+
+	acl := sarama.Acl{
+		Principal:      kafkaConnectAcl.Principal,
+		Host:           "*",
+		Operation:      sarama.AclOperationRead,
+		PermissionType: sarama.AclPermissionAllow,
+	}
+	resourceInfos[i] = AclResourceInfo{Resource: resource, Acl: acl}
+	i = i + 1
+
+	return AclResources{Resources: resourceInfos}, nil
+}
+
+func GetNumberOfResourcesForKafkaConnect(kafkaConnecAcl KafkaConnectAcl) int {
+	resourcesCount := len(kafkaConnecAcl.ReadTopics) + len(kafkaConnecAcl.WriteTopics) + 6 + 1
+	if kafkaConnecAcl.EnableTopicCreate {
+		resourcesCount = resourcesCount + 1
+	}
+
+	return resourcesCount
+}
+
 func (b KafkaAclsBuilder) ConsumerAclsParser(client *KafkaCluster,
 	d *schema.ResourceData,
 	aclInterface interface{},
@@ -152,6 +226,60 @@ func (b KafkaAclsBuilder) KafkaStreamsAclsParser(client *KafkaCluster,
 	return nil
 }
 
+func (b KafkaAclsBuilder) KafkaConnectAclsParser(client *KafkaCluster,
+	d *schema.ResourceData,
+	aclInterface interface{},
+	aclEntity sarama.ResourceAcls) error {
+
+	kafkaConnectAcl := aclInterface.(KafkaConnectAcl)
+	readTopics := make([]string, 0)
+	writeTopics := make([]string, 0)
+
+	controlTopics := make(map[string]bool)
+	controlTopics[kafkaConnectAcl.StatusTopic] = true
+	controlTopics[kafkaConnectAcl.OffsetTopic] = true
+	controlTopics[kafkaConnectAcl.ConfigsTopic] = true
+
+	for _, acl := range aclEntity.Acls {
+
+		if acl.Principal == kafkaConnectAcl.Principal {
+			d.Set("principal", acl.Principal)
+			if client.IsAGroupAcl(aclEntity) {
+				d.Set("group", aclEntity.ResourceName)
+			}
+
+			if client.IsATopicAcl(aclEntity) {
+
+				if controlTopics[aclEntity.ResourceName] {
+					topicNameKey := ""
+					if aclEntity.ResourceName == kafkaConnectAcl.OffsetTopic {
+						topicNameKey = "offset_topic"
+					} else if aclEntity.ResourceName == kafkaConnectAcl.StatusTopic {
+						topicNameKey = "status_topic"
+					} else {
+						topicNameKey = "configs_topic"
+					}
+					d.Set(topicNameKey, aclEntity.ResourceName)
+				} else {
+					if acl.Operation == sarama.AclOperationRead {
+						readTopics = append(readTopics, aclEntity.ResourceName)
+					} else {
+						writeTopics = append(writeTopics, aclEntity.ResourceName)
+					}
+				}
+			}
+			if client.IsAClusterAcl(aclEntity) {
+				d.Set("enable_topic_create", true)
+			}
+		}
+		d.Set("read_topics", readTopics)
+		d.Set("write_topics", writeTopics)
+		d.Set("metadata", kafkaConnectAcl.Metadata)
+	}
+
+	return nil
+}
+
 func (b KafkaAclsBuilder) ConsumerAclShouldContinue(entity sarama.ResourceAcls, aclInterface interface{}) bool {
 	consumerAcl := aclInterface.(ConsumerAcl)
 	return entity.ResourceName != consumerAcl.Project
@@ -160,4 +288,10 @@ func (b KafkaAclsBuilder) ConsumerAclShouldContinue(entity sarama.ResourceAcls, 
 func (b KafkaAclsBuilder) KafkaStreamsAclShouldContinue(entity sarama.ResourceAcls, aclInterface interface{}) bool {
 	acl := aclInterface.(KafkaStreamsAcl)
 	return entity.ResourceName != acl.Project
+}
+
+func (b KafkaAclsBuilder) KafkaConnectAclShouldContinue(entity sarama.ResourceAcls, aclInterface interface{}) bool {
+	aclObject := aclInterface.(KafkaConnectAcl)
+	acl := entity.Acls[0]
+	return acl.Principal != aclObject.Principal
 }

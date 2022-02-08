@@ -61,7 +61,7 @@ func resourceAsKafkaStreamsAcl(d *schema.ResourceData) interface{} {
 	for k, v := range metadata {
 		switch v := v.(type) {
 		case string:
-			log.Printf("[DEBUG] resourceAsConsumerAcl: config.key = %s, config.value = %s", k, v)
+			log.Printf("[DEBUG] resourceAsKafkaStreamsAcl: config.key = %s, config.value = %s", k, v)
 			metaMap[k] = v
 		}
 	}
@@ -70,6 +70,33 @@ func resourceAsKafkaStreamsAcl(d *schema.ResourceData) interface{} {
 	writeTopicsArray := interfaceArrayAsSlice(writeTopics)
 
 	return *client.NewKafkaStreamsAcl(project, principal, readTopicsArray, writeTopicsArray, metaMap)
+}
+
+func resourceAsKafkaConnectAcl(d *schema.ResourceData) interface{} {
+	principal := d.Get("principal").(string)
+	readTopics := d.Get("read_topics").([]interface{})
+	writeTopics := d.Get("write_topics").([]interface{})
+	group := d.Get("group").(string)
+	statusTopic := d.Get("status_topic").(string)
+	configsTopic := d.Get("configs_topic").(string)
+	offsetTopic := d.Get("offset_topic").(string)
+	topicCreate := d.Get("enable_topic_create").(bool)
+
+	metadata := d.Get("metadata").(map[string]interface{})
+
+	metaMap := make(map[string]string)
+	for k, v := range metadata {
+		switch v := v.(type) {
+		case string:
+			log.Printf("[DEBUG] resourceAsKafkaConnectAcl: config.key = %s, config.value = %s", k, v)
+			metaMap[k] = v
+		}
+	}
+
+	readTopicsArray := interfaceArrayAsSlice(readTopics)
+	writeTopicsArray := interfaceArrayAsSlice(writeTopics)
+
+	return *client.NewKafkaConnectAcl(principal, group, readTopicsArray, writeTopicsArray, statusTopic, configsTopic, offsetTopic, topicCreate, metaMap)
 }
 
 func interfaceArrayAsSlice(topics []interface{}) []string {

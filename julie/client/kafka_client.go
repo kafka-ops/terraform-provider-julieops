@@ -67,6 +67,37 @@ func NewKafkaStreamsAcl(project string, principal string, readTopics []string, w
 	}
 }
 
+type KafkaConnectAcl struct {
+	Id                string
+	Principal         string
+	Group             string
+	ReadTopics        []string
+	WriteTopics       []string
+	StatusTopic       string
+	ConfigsTopic      string
+	OffsetTopic       string
+	EnableTopicCreate bool
+	Metadata          map[string]string
+}
+
+func NewKafkaConnectAcl(principal string, group string, readTopics []string, writeTopics []string,
+	statusTopic string, configsTopic string, offsetTopic string,
+	enableTopicCreate bool, metadata map[string]string) *KafkaConnectAcl {
+
+	return &KafkaConnectAcl{
+		Id:                fmt.Sprintf("%s#%s", group, principal),
+		Principal:         principal,
+		Group:             group,
+		ReadTopics:        readTopics,
+		WriteTopics:       writeTopics,
+		StatusTopic:       statusTopic,
+		ConfigsTopic:      configsTopic,
+		OffsetTopic:       offsetTopic,
+		EnableTopicCreate: enableTopicCreate,
+		Metadata:          metadata,
+	}
+}
+
 func NewKafkaCluster(bootstrapServers string, config Config) *KafkaCluster {
 	return &KafkaCluster{BootstrapServers: []string{bootstrapServers}, Config: config}
 }
@@ -247,6 +278,10 @@ func (k KafkaCluster) IsATopicAcl(acl sarama.ResourceAcls) bool {
 	return acl.ResourceType == sarama.AclResourceTopic
 }
 
+func (k KafkaCluster) IsAClusterAcl(acl sarama.ResourceAcls) bool {
+	return acl.ResourceType == sarama.AclResourceCluster
+}
+
 func (k *KafkaCluster) ApplyAcls(resources AclResources) error {
 	adminClient, err := k.newAdminClient()
 	if err != nil {
@@ -374,6 +409,58 @@ func (k *KafkaCluster) CreateKafkaStreamsAcl(kStreamsAcl KafkaStreamsAcl) (*Kafk
 	adminClient.CreateACL(resource, acl)
 
 	return &kStreamsAcl, nil
+}
+
+func (k *KafkaCluster) CreateKafkaConnectAcl(kConnectAcl KafkaConnectAcl, b KafkaAclsBuilder) (*KafkaConnectAcl, error) {
+	adminClient, err := k.newAdminClient()
+	if err != nil {
+		log.Printf("[ERROR] Error connecting to Kafka %s", k.BootstrapServers)
+		return nil, err
+	}
+	defer adminClient.Close()
+
+	resources, err := b.KafkaConnectAclsBuilder(kConnectAcl)
+	if err != nil {
+		return nil, err
+	}
+	for _, resource := range resources.Resources {
+		adminClient.CreateACL(resource.Resource, resource.Acl)
+	}
+	return &kConnectAcl, nil
+}
+
+func (k *KafkaCluster) DeleteKafkaConnectAcl(kConnectAcl KafkaConnectAcl, b KafkaAclsBuilder) error {
+	adminClient, err := k.newAdminClient()
+	if err != nil {
+		log.Printf("[ERROR] Error connecting to Kafka %s", k.BootstrapServers)
+		return err
+	}
+	defer adminClient.Close()
+
+	resources, err := b.KafkaConnectAclsBuilder(kConnectAcl)
+	if err != nil {
+		return err
+	}
+	for _, resource := range resources.Resources {
+
+		var filter = sarama.AclFilter{
+			ResourceName:              &resource.Resource.ResourceName,
+			ResourceType:              resource.Resource.ResourceType,
+			Principal:                 &resource.Acl.Principal,
+			Operation:                 resource.Acl.Operation,
+			PermissionType:            resource.Acl.PermissionType,
+			ResourcePatternTypeFilter: resource.Resource.ResourcePatternType,
+		}
+		log.Printf("[DEBUG] Deleting ACL(s) for filter %o", filter)
+		m, err := adminClient.DeleteACL(filter, false)
+		log.Printf("[DEBUG] Deleted ACL(s) %d", len(m))
+		if err != nil {
+			log.Printf("[ERROR] Error deleting ACLs from Kafka %s", k.BootstrapServers)
+			return err
+		}
+	}
+
+	return nil
 }
 
 func createKStreamAcl(project string, principal string, resourceType sarama.AclResourceType, op sarama.AclOperation) (sarama.Resource, sarama.Acl) {

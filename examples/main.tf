@@ -43,6 +43,15 @@ resource "julieops_kafka_streams_acl" "kstreams" {
   }
 }
 
+resource "julieops_kafka_connect_acl" "connect" {
+  principal = "User:connect"
+  read_topics = [ "foo" ]
+  write_topics = [ "bar" ]
+  metadata = {
+    "foo" = "bar"
+  }
+}
+
 data "julieops_kafka_topic" "schemas" {
   name = "_schemas"
 }
