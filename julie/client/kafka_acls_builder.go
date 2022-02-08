@@ -166,8 +166,7 @@ func GetNumberOfResourcesForKafkaConnect(kafkaConnecAcl KafkaConnectAcl) int {
 	return resourcesCount
 }
 
-func (b KafkaAclsBuilder) ConsumerAclsParser(client *KafkaCluster,
-	d *schema.ResourceData,
+func (b KafkaAclsBuilder) ConsumerAclsParser(d *schema.ResourceData,
 	aclInterface interface{},
 	aclEntity sarama.ResourceAcls) error {
 
@@ -176,10 +175,10 @@ func (b KafkaAclsBuilder) ConsumerAclsParser(client *KafkaCluster,
 	for _, acl := range aclEntity.Acls {
 		if acl.Principal == consumerAcl.Principal {
 			d.Set("principal", acl.Principal)
-			if client.IsAGroupAcl(aclEntity) {
+			if b.Client.IsAGroupAcl(aclEntity) {
 				d.Set("group", aclEntity.ResourceName)
 			}
-			if client.IsATopicAcl(aclEntity) {
+			if b.Client.IsATopicAcl(aclEntity) {
 				d.Set("project", aclEntity.ResourceName)
 			}
 			d.Set("metadata", consumerAcl.Metadata)
@@ -189,8 +188,7 @@ func (b KafkaAclsBuilder) ConsumerAclsParser(client *KafkaCluster,
 	return nil
 }
 
-func (b KafkaAclsBuilder) KafkaStreamsAclsParser(client *KafkaCluster,
-	d *schema.ResourceData,
+func (b KafkaAclsBuilder) KafkaStreamsAclsParser(d *schema.ResourceData,
 	aclInterface interface{},
 	aclEntity sarama.ResourceAcls) error {
 
@@ -202,10 +200,10 @@ func (b KafkaAclsBuilder) KafkaStreamsAclsParser(client *KafkaCluster,
 
 		if acl.Principal == kStreamAcl.Principal {
 			d.Set("principal", acl.Principal)
-			if client.IsAGroupAcl(aclEntity) {
+			if b.Client.IsAGroupAcl(aclEntity) {
 				d.Set("group", aclEntity.ResourceName)
 			}
-			if client.IsATopicAcl(aclEntity) {
+			if b.Client.IsATopicAcl(aclEntity) {
 				if aclEntity.ResourcePatternType == sarama.AclPatternPrefixed {
 					d.Set("project", aclEntity.ResourceName)
 				} else {
@@ -226,8 +224,7 @@ func (b KafkaAclsBuilder) KafkaStreamsAclsParser(client *KafkaCluster,
 	return nil
 }
 
-func (b KafkaAclsBuilder) KafkaConnectAclsParser(client *KafkaCluster,
-	d *schema.ResourceData,
+func (b KafkaAclsBuilder) KafkaConnectAclsParser(d *schema.ResourceData,
 	aclInterface interface{},
 	aclEntity sarama.ResourceAcls) error {
 
@@ -244,11 +241,11 @@ func (b KafkaAclsBuilder) KafkaConnectAclsParser(client *KafkaCluster,
 
 		if acl.Principal == kafkaConnectAcl.Principal {
 			d.Set("principal", acl.Principal)
-			if client.IsAGroupAcl(aclEntity) {
+			if b.Client.IsAGroupAcl(aclEntity) {
 				d.Set("group", aclEntity.ResourceName)
 			}
 
-			if client.IsATopicAcl(aclEntity) {
+			if b.Client.IsATopicAcl(aclEntity) {
 
 				if controlTopics[aclEntity.ResourceName] {
 					topicNameKey := ""
@@ -268,7 +265,7 @@ func (b KafkaAclsBuilder) KafkaConnectAclsParser(client *KafkaCluster,
 					}
 				}
 			}
-			if client.IsAClusterAcl(aclEntity) {
+			if b.Client.IsAClusterAcl(aclEntity) {
 				d.Set("enable_topic_create", true)
 			}
 		}

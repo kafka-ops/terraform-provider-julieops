@@ -26,12 +26,9 @@ func funcCreateAcl(c *client.KafkaCluster, builder client.KafkaAclsBuilder,
 }
 
 type fnShouldContinue func(entity sarama.ResourceAcls, aclInterface interface{}) bool
-type fnAclParser func(client *client.KafkaCluster,
-	d *schema.ResourceData,
-	aclInterface interface{},
-	aclEntity sarama.ResourceAcls) error
+type fnAclParser func(d *schema.ResourceData, aclInterface interface{}, aclEntity sarama.ResourceAcls) error
 
-func funcSelectAclsFor(d *schema.ResourceData, foundAcls []sarama.ResourceAcls, client *client.KafkaCluster, aclInterface interface{},
+func funcSelectAclsFor(d *schema.ResourceData, foundAcls []sarama.ResourceAcls, aclInterface interface{},
 	shouldContinue fnShouldContinue, parser fnAclParser) {
 	for _, aclEntity := range foundAcls {
 		if shouldContinue(aclEntity, aclInterface) {
@@ -41,6 +38,6 @@ func funcSelectAclsFor(d *schema.ResourceData, foundAcls []sarama.ResourceAcls, 
 			break
 		}
 		log.Printf("[INFO] ACL(s) found resource %s, acls.Count = %d", aclEntity.ResourceName, len(aclEntity.Acls))
-		parser(client, d, aclInterface, aclEntity)
+		parser(d, aclInterface, aclEntity)
 	}
 }

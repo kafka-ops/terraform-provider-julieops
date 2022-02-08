@@ -115,7 +115,7 @@ func resourceKafkaConnectRead(ctx context.Context, d *schema.ResourceData, m int
 		return diag.FromErr(err)
 	}
 
-	funcSelectAclsFor(d, foundAcls, kafkaClient, kafkaConnectAcl, builder.KafkaConnectAclShouldContinue, builder.KafkaConnectAclsParser)
+	funcSelectAclsFor(d, foundAcls, kafkaConnectAcl, builder.KafkaConnectAclShouldContinue, builder.KafkaConnectAclsParser)
 
 	return nil
 }

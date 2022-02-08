@@ -86,7 +86,7 @@ func resourceKafkaStreamsRead(ctx context.Context, d *schema.ResourceData, m int
 		return diag.FromErr(err)
 	}
 
-	funcSelectAclsFor(d, foundAcls, kafkaClient, kStreamAcl, builder.KafkaStreamsAclShouldContinue, builder.KafkaStreamsAclsParser)
+	funcSelectAclsFor(d, foundAcls, kStreamAcl, builder.KafkaStreamsAclShouldContinue, builder.KafkaStreamsAclsParser)
 
 	return nil
 

@@ -76,7 +76,7 @@ func resourceKafkaConsumerRead(ctx context.Context, d *schema.ResourceData, m in
 		return diag.FromErr(err)
 	}
 
-	funcSelectAclsFor(d, foundAcls, kafkaClient, consumerAcl, builder.ConsumerAclShouldContinue, builder.ConsumerAclsParser)
+	funcSelectAclsFor(d, foundAcls, consumerAcl, builder.ConsumerAclShouldContinue, builder.ConsumerAclsParser)
 
 	return nil
 }
