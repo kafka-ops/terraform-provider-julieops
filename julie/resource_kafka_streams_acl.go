@@ -12,7 +12,6 @@ func resourceKafkaStreamsAcl() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceKafkaStreamsCreate,
 		ReadContext:   resourceKafkaStreamsRead,
-		UpdateContext: resourceKafkaStreamsUpdate,
 		DeleteContext: resourceKafkaStreamsDelete,
 		Importer: &schema.ResourceImporter{
 			StateContext: schema.ImportStatePassthroughContext,
@@ -21,17 +20,18 @@ func resourceKafkaStreamsAcl() *schema.Resource {
 			"project": {
 				Type:        schema.TypeString,
 				Required:    true,
-				ForceNew:    false,
+				ForceNew:    true,
 				Description: "The project prefix used to build the resource ACLs",
 			},
 			"principal": {
 				Type:        schema.TypeString,
 				Required:    true,
-				ForceNew:    false,
+				ForceNew:    true,
 				Description: "The user principal for this acl definition",
 			},
 			"read_topics": {
 				Type:     schema.TypeList,
+				ForceNew: true,
 				Optional: true,
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
@@ -40,6 +40,7 @@ func resourceKafkaStreamsAcl() *schema.Resource {
 			},
 			"write_topics": {
 				Type:     schema.TypeList,
+				ForceNew: true,
 				Optional: true,
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
@@ -49,7 +50,7 @@ func resourceKafkaStreamsAcl() *schema.Resource {
 			"metadata": {
 				Type:        schema.TypeMap,
 				Optional:    true,
-				ForceNew:    false,
+				ForceNew:    true,
 				Description: "Map of optional values describing metadata information for this consumer",
 				Elem:        schema.TypeString,
 			},
@@ -91,19 +92,6 @@ func resourceKafkaStreamsRead(ctx context.Context, d *schema.ResourceData, m int
 	return nil
 
 	return nil
-}
-
-func resourceKafkaStreamsUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	c := m.(*client.KafkaCluster)
-	acl := resourceAsKafkaStreamsAcl(d).(client.KafkaStreamsAcl)
-
-	_, err := c.CreateKafkaStreamsAcl(acl)
-
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	return resourceKafkaStreamsRead(ctx, d, m)
 }
 
 func resourceKafkaStreamsDelete(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {

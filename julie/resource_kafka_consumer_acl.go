@@ -12,7 +12,6 @@ func resourceKafkaConsumerAcl() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceKafkaConsumerCreate,
 		ReadContext:   resourceKafkaConsumerRead,
-		UpdateContext: resourceKafkaConsumerUpdate,
 		DeleteContext: resourceKafkaConsumerDelete,
 		Importer: &schema.ResourceImporter{
 			StateContext: schema.ImportStatePassthroughContext,
@@ -21,25 +20,26 @@ func resourceKafkaConsumerAcl() *schema.Resource {
 			"project": {
 				Type:        schema.TypeString,
 				Required:    true,
-				ForceNew:    false,
+				ForceNew:    true,
 				Description: "The project prefix used to build the resource ACLs",
 			},
 			"principal": {
 				Type:        schema.TypeString,
 				Required:    true,
-				ForceNew:    false,
+				ForceNew:    true,
 				Description: "The user principal for this acl definition.",
 			},
 			"group": {
 				Type:        schema.TypeString,
 				Optional:    true,
+				ForceNew:    true,
 				Default:     "*",
 				Description: "The consumer group name.",
 			},
 			"metadata": {
 				Type:        schema.TypeMap,
 				Optional:    true,
-				ForceNew:    false,
+				ForceNew:    true,
 				Description: "Map of optional values describing metadata information for this consumer",
 				Elem:        schema.TypeString,
 			},
@@ -79,19 +79,6 @@ func resourceKafkaConsumerRead(ctx context.Context, d *schema.ResourceData, m in
 	funcSelectAclsFor(d, foundAcls, consumerAcl, builder.ConsumerAclShouldContinue, builder.ConsumerAclsParser)
 
 	return nil
-}
-
-func resourceKafkaConsumerUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	c := m.(*client.KafkaCluster)
-	acl := resourceAsConsumerAcl(d).(client.ConsumerAcl)
-
-	_, err := c.CreateConsumerAcl(acl)
-
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	return resourceKafkaTopicRead(ctx, d, m)
 }
 
 func resourceKafkaConsumerDelete(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
