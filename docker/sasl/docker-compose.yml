@@ -74,12 +74,12 @@ services:
       CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: "1"
       CONNECT_REST_ADVERTISED_HOST_NAME: "kafka-connect"
       CONNECT_PLUGIN_PATH: /usr/share/confluent-hub-components
-      CONNECT_REST_EXTENSION_CLASSES: org.apache.kafka.connect.rest.basic.auth.extension.BasicAuthSecurityRestExtension
-      KAFKA_OPTS: -Djava.security.auth.login.config=/tmp/connect.jaas
+      #CONNECT_REST_EXTENSION_CLASSES: org.apache.kafka.connect.rest.basic.auth.extension.BasicAuthSecurityRestExtension
+      #KAFKA_OPTS: -Djava.security.auth.login.config=/tmp/connect.jaas
     volumes:
       - $PWD/scripts:/scripts
-      - $PWD/connect-plugins:/usr/share/confluent-hub-components
-      - $PWD/jars:/usr/share/confluent-hub-components/confluentinc-kafka-connect-jdbc/jars
+      #- $PWD/connect-plugins:/usr/share/confluent-hub-components
+      #- $PWD/jars:/usr/share/confluent-hub-components/confluentinc-kafka-connect-jdbc/jars
 
   schema-registry:
     image: confluentinc/cp-schema-registry:${TAG}

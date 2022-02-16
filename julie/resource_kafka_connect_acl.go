@@ -12,7 +12,6 @@ func resourceKafkaConnectAcl() *schema.Resource {
 	return &schema.Resource{
 		CreateContext: resourceKafkaConnectCreate,
 		ReadContext:   resourceKafkaConnectRead,
-		UpdateContext: resourceKafkaConnectUpdate,
 		DeleteContext: resourceKafkaConnectDelete,
 		Importer: &schema.ResourceImporter{
 			StateContext: schema.ImportStatePassthroughContext,
@@ -120,20 +119,6 @@ func resourceKafkaConnectRead(ctx context.Context, d *schema.ResourceData, m int
 	funcSelectAclsFor(d, foundAcls, kafkaConnectAcl, builder.KafkaConnectAclShouldContinue, builder.KafkaConnectAclsParser)
 
 	return nil
-}
-
-func resourceKafkaConnectUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	c := m.(*client.KafkaCluster)
-	acl := resourceAsKafkaConnectAcl(d).(client.KafkaConnectAcl)
-
-	builder := client.KafkaAclsBuilder{Client: c}
-	_, err := c.CreateKafkaConnectAcl(acl, builder)
-
-	if err != nil {
-		return diag.FromErr(err)
-	}
-
-	return resourceKafkaConnectRead(ctx, d, m)
 }
 
 func resourceKafkaConnectDelete(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
