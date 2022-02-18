@@ -10,8 +10,9 @@ import (
 )
 
 type KafkaCluster struct {
-	BootstrapServers []string
-	Config           Config
+	BootstrapServers   []string
+	Config             Config
+	KafkaConnectClient KafkaConnectCluster
 }
 
 type Config struct {
@@ -98,8 +99,13 @@ func NewKafkaConnectAcl(principal string, group string, readTopics []string, wri
 	}
 }
 
-func NewKafkaCluster(bootstrapServers string, config Config) *KafkaCluster {
-	return &KafkaCluster{BootstrapServers: []string{bootstrapServers}, Config: config}
+type KafkaConnector struct {
+	Name   string
+	Config map[string]interface{}
+}
+
+func NewKafkaCluster(bootstrapServers string, config Config, kafkaConnectClient KafkaConnectCluster) *KafkaCluster {
+	return &KafkaCluster{BootstrapServers: []string{bootstrapServers}, Config: config, KafkaConnectClient: kafkaConnectClient}
 }
 
 func (c *Config) newConfig() (*sarama.Config, error) {

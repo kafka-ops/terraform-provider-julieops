@@ -12,6 +12,7 @@ provider "julieops" {
   sasl_username = "kafka"
   sasl_password = "kafka"
   sasl_mechanism = "plain"
+  kafka_connects = "http://localhost:18083"
 }
 
 
@@ -20,7 +21,7 @@ resource "julieops_kafka_topic" "custom_topic" {
   partitions = 1
   replication_factor = 1
   config = {
-    "retention.ms": "24"
+    "retention.ms" =  "24"
   }
 }
 
@@ -59,6 +60,22 @@ resource "julieops_kafka_connect_acl" "connect" {
   write_topics = [ "bar" ]
   metadata = {
     "foo" = "bar"
+  }
+}
+
+
+resource "julieops_kafka_connector" "test" {
+  name = "foo"
+  config = {
+    "connector.class" =                 "io.confluent.kafka.connect.datagen.DatagenConnector"
+    "kafka.topic" =                     "pageviews"
+    "quickstart" =                      "pageviews"
+    "key.converter" =                   "org.apache.kafka.connect.storage.StringConverter"
+    "value.converter" =                 "org.apache.kafka.connect.json.JsonConverter"
+    "value.converter.schemas.enable" =  "false"
+    "max.interval" =                    100
+    "iterations" =                      10000000
+    "tasks.max" =                       "1"
   }
 }
 

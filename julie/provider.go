@@ -31,12 +31,18 @@ func Provider() *schema.Provider {
 				Optional:    true,
 				Description: "The sasl mechanism to be used",
 			},
+			"kafka_connects": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "The Kafka Connect cluster url(s)",
+			},
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"julieops_kafka_topic":        resourceKafkaTopic(),
 			"julieops_kafka_consumer_acl": resourceKafkaConsumerAcl(),
 			"julieops_kafka_streams_acl":  resourceKafkaStreamsAcl(),
 			"julieops_kafka_connect_acl":  resourceKafkaConnectAcl(),
+			"julieops_kafka_connector":    resourceKafkaConnector(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
 			"julieops_kafka_topic": dataSourceKafkaTopics(),
@@ -53,6 +59,8 @@ func providerConfig(ctx context.Context, d *schema.ResourceData) (interface{}, d
 	saslMechanism := d.Get("sasl_mechanism").(string)
 	isSaslEnabled := saslUsername != "" && saslPassword != "" && saslMechanism != ""
 
+	kafkaConnectUrl := d.Get("kafka_connects").(string)
+
 	var diags diag.Diagnostics
 
 	if bootstrapServers != "" {
@@ -63,7 +71,14 @@ func providerConfig(ctx context.Context, d *schema.ResourceData) (interface{}, d
 			SaslUsername:     saslUsername,
 			IsSaslEnabled:    isSaslEnabled,
 		}
-		cluster := client.NewKafkaCluster(bootstrapServers, config)
+
+		kafkaConnectClient := &client.KafkaConnectCluster{}
+
+		if kafkaConnectUrl != "" {
+			kafkaConnectClient = client.NewKafkaConnectClient(kafkaConnectUrl)
+		}
+
+		cluster := client.NewKafkaCluster(bootstrapServers, config, *kafkaConnectClient)
 		return cluster, diags
 	}
 	return nil, diags

@@ -54,3 +54,40 @@ func TestKafkaConnectCluster_AddConnector(t *testing.T) {
 	}
 	assert.NotEmpty(t, response.Name, "Name should be not empty")
 }
+
+func TestKafkaConnectCluster_GetConnector(t *testing.T) {
+	client := NewKafkaConnectClient("http://localhost:18083")
+
+	var connectorConfig = map[string]interface{}{
+		"connector.class":                "io.confluent.kafka.connect.datagen.DatagenConnector",
+		"kafka.topic":                    "pageviews",
+		"quickstart":                     "pageviews",
+		"key.converter":                  "org.apache.kafka.connect.storage.StringConverter",
+		"value.converter":                "org.apache.kafka.connect.json.JsonConverter",
+		"value.converter.schemas.enable": "false",
+		"max.interval":                   100,
+		"iterations":                     10000000,
+		"tasks.max":                      "1",
+	}
+	var connector = ConnectorCreateRequest{
+		Name:   "foo",
+		Config: connectorConfig,
+	}
+
+	defer client.DeleteConnector("foo")
+
+	response, err := client.AddOrUpdateConnector(connector)
+
+	if err != nil {
+		t.Errorf("Something happen while trying to create a connector : %s", err)
+	}
+	assert.NotEmpty(t, response.Name, "Name should be not empty")
+
+	getConnectorResponse, err := client.GetConnector("foo")
+
+	if err != nil {
+		t.Errorf("Something happen while trying to get the connector foo : %s", err)
+	}
+
+	assert.NotEmpty(t, getConnectorResponse.Name, "Name should be not empty")
+}

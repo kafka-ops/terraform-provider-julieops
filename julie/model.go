@@ -110,3 +110,23 @@ func interfaceArrayAsSlice(topics []interface{}) []string {
 	}
 	return topicsArray
 }
+
+func extractConnectorResource(d *schema.ResourceData) client.KafkaConnector {
+
+	name := d.Get("name").(string)
+	config := d.Get("config").(map[string]interface{})
+
+	mapConfig := make(map[string]*string)
+	for k, v := range config {
+		switch v := v.(type) {
+		case string:
+			log.Printf("extractConnectorResource: config.key = %s, config.value = %s", k, v)
+			mapConfig[k] = &v
+		}
+	}
+
+	return client.KafkaConnector{
+		Name:   name,
+		Config: config,
+	}
+}

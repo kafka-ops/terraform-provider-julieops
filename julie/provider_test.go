@@ -36,6 +36,11 @@ func testAccPreCheck(t *testing.T) {
 	if client == nil {
 		t.Fatal("No client")
 	}
+	log.Printf("testAccPreCheck.Meta: %d", meta)
+	kafkaConnectClient := client.KafkaConnectClient
+	if kafkaConnectClient.Url == "" {
+		t.Fatal("No kafka connect client")
+	}
 }
 
 func overrideProviderFactory() map[string]func() (*schema.Provider, error) {
@@ -71,10 +76,15 @@ func accTestProviderConfig() (*terraform.ResourceConfig, error) {
 		"sasl_username":     "kafka",
 		"sasl_password":     "kafka",
 		"sasl_mechanism":    "plain",
+		"kafka_connects":    "http://localhost:18083",
 	}
 	return terraform.NewResourceConfigRaw(raw), nil
 }
 
 func bootstrapServersFromEnv() string {
 	return "localhost:9092"
+}
+
+func kafkaConnectServerFromEnv() string {
+	return "http://localhost:18083"
 }

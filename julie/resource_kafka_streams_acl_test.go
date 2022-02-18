@@ -11,14 +11,14 @@ import (
 func TestAccKafkaStreamsAclCreate(t *testing.T) {
 	project := "foo"
 	resource.Test(t, resource.TestCase{
-		Providers: testAccProviders,
+		ProviderFactories: overrideProviderFactory(),
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
 		CheckDestroy: testAccKafkaStreamsAclDelete,
 		Steps: []resource.TestStep{
 			{
-				Config: cfg(bootstrapServersFromEnv(), fmt.Sprintf(testKafkaStreamsResourceAcl_noConfig, project)),
+				Config: cfg(bootstrapServersFromEnv(), kafkaConnectServerFromEnv(), fmt.Sprintf(testKafkaStreamsResourceAcl_noConfig, project)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccKafkaStreamsAclExist("julieops_kafka_streams_acl.streams", "User:streams"),
 				),

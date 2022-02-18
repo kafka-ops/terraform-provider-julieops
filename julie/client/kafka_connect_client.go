@@ -73,6 +73,19 @@ func (kc KafkaConnectCluster) doPostRequest(url string, bodyData []byte) (*http.
 	return kc.Client.Do(req)
 }
 
+func (kc KafkaConnectCluster) doPutRequest(url string, bodyData []byte) (*http.Response, error) {
+
+	req, err := http.NewRequest(http.MethodPut, url, bytes.NewBuffer(bodyData))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	return kc.Client.Do(req)
+}
+
 func (kc KafkaConnectCluster) GetClusterInfo() (*ClusterInfoResponse, error) {
 
 	response, err := kc.doGetRequest(kc.Url)
@@ -111,9 +124,34 @@ func (kc KafkaConnectCluster) GetConnectors() (*ConnectorsResponse, error) {
 	return &connectors, nil
 }
 
+func (kc KafkaConnectCluster) GetConnector(name string) (*GetConnectorResponse, error) {
+	connectorsUrl := kc.Url + "/connectors/" + name
+	response, err := kc.doGetRequest(connectorsUrl)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	defer response.Body.Close()
+
+	var getConnectorResponse GetConnectorResponse
+
+	if err := json.NewDecoder(response.Body).Decode(&getConnectorResponse); err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	return &getConnectorResponse, nil
+}
+
 type ConnectorCreateRequest struct {
 	Name   string                 `json:"name"`
 	Config map[string]interface{} `json:"config"`
+}
+
+type GetConnectorResponse struct {
+	Name   string              `json:"name"`
+	Config map[string]string   `json:"config"`
+	Tasks  []ConnectorTaskInfo `json:"tasks"`
 }
 
 type ConnectorCreateResponse struct {
@@ -128,15 +166,19 @@ type ConnectorTaskInfo struct {
 }
 
 func (kc KafkaConnectCluster) AddConnector(c ConnectorCreateRequest) (*ConnectorCreateResponse, error) {
-	connectorsUrl := kc.Url + "/connectors"
-	body, err := json.Marshal(c)
+	return kc.AddOrUpdateConnector(c)
+}
+
+func (kc KafkaConnectCluster) AddOrUpdateConnector(c ConnectorCreateRequest) (*ConnectorCreateResponse, error) {
+	connectorsUrl := kc.Url + "/connectors/" + c.Name + "/config"
+	body, err := json.Marshal(c.Config)
 	if err != nil {
 		return nil, err
 	}
-	response, err := kc.doPostRequest(connectorsUrl, body)
+	response, err := kc.doPutRequest(connectorsUrl, body)
 
 	if response.StatusCode == 409 {
-		errorCode := fmt.Errorf("a conflict occurred or the connector already exist")
+		errorCode := fmt.Errorf("a rebalance is in place, please check your Kafka Connect cluster")
 		return nil, errorCode
 	}
 	if response.StatusCode > 400 {

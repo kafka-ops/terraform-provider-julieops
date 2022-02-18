@@ -11,14 +11,14 @@ import (
 func TestAccKafkaConnectAclCreate(t *testing.T) {
 	principal := "User:connect"
 	resource.Test(t, resource.TestCase{
-		Providers: testAccProviders,
+		ProviderFactories: overrideProviderFactory(),
 		PreCheck: func() {
 			testAccPreCheck(t)
 		},
 		CheckDestroy: testAccKafkaConnectAclDelete,
 		Steps: []resource.TestStep{
 			{
-				Config: cfg(bootstrapServersFromEnv(), fmt.Sprintf(testKafkaConnectResourceAcl_noConfig, principal)),
+				Config: cfg(bootstrapServersFromEnv(), kafkaConnectServerFromEnv(), fmt.Sprintf(testKafkaConnectResourceAcl_noConfig, principal)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccKafkaConnectAclExist("julieops_kafka_connect_acl.connect", "User:connect"),
 				),
