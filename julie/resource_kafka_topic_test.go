@@ -6,10 +6,16 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"terraform-provider-julieops/julie/client"
+	julieTest "terraform-provider-julieops/julie/test"
 	"testing"
 )
 
 func TestAccKafkaTopicCreateWithoutConfig(t *testing.T) {
+
+	ctx := context.Background()
+	setup, close := julieTest.SetupDocker(ctx, julieTest.ContainersSetupConfig{}, t)
+	defer close(ctx)
+
 	topicName := "foo"
 	resource.Test(t, resource.TestCase{
 		ProviderFactories: overrideProviderFactory(),
@@ -19,7 +25,7 @@ func TestAccKafkaTopicCreateWithoutConfig(t *testing.T) {
 		CheckDestroy: testAccKafkaTopicDelete,
 		Steps: []resource.TestStep{
 			{
-				Config: cfg(bootstrapServersFromEnv(), kafkaConnectServerFromEnv(), fmt.Sprintf(testResourceTopic_noConfig, topicName)),
+				Config: cfg(setup.AkContainer.URI, kafkaConnectServerFromEnv(), fmt.Sprintf(testResourceTopic_noConfig, topicName)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccKafkaTopicExist("julieops_kafka_topic.test", ""),
 				),
@@ -30,6 +36,10 @@ func TestAccKafkaTopicCreateWithoutConfig(t *testing.T) {
 }
 
 func TestAccKafkaTopicCreateWithConfig(t *testing.T) {
+	ctx := context.Background()
+	setup, close := julieTest.SetupDocker(ctx, julieTest.ContainersSetupConfig{}, t)
+	defer close(ctx)
+
 	topicName := "foo.config"
 	resource.Test(t, resource.TestCase{
 		ProviderFactories: overrideProviderFactory(),
@@ -39,7 +49,7 @@ func TestAccKafkaTopicCreateWithConfig(t *testing.T) {
 		CheckDestroy: testAccKafkaTopicDelete,
 		Steps: []resource.TestStep{
 			{
-				Config: cfg(bootstrapServersFromEnv(), kafkaConnectServerFromEnv(), fmt.Sprintf(testResourceTopic_simpleConfig, topicName, "42")),
+				Config: cfg(setup.AkContainer.URI, kafkaConnectServerFromEnv(), fmt.Sprintf(testResourceTopic_simpleConfig, topicName, "42")),
 				Check: resource.ComposeTestCheckFunc(
 					testAccKafkaTopicExist("julieops_kafka_topic.test_config", "42"),
 				),
@@ -50,6 +60,10 @@ func TestAccKafkaTopicCreateWithConfig(t *testing.T) {
 }
 
 func TestAccKafkaTopicConfigUpdate(t *testing.T) {
+	ctx := context.Background()
+	setup, close := julieTest.SetupDocker(ctx, julieTest.ContainersSetupConfig{}, t)
+	defer close(ctx)
+
 	topicName := "foo.config.update"
 	resource.Test(t, resource.TestCase{
 		ProviderFactories: overrideProviderFactory(),
@@ -59,7 +73,7 @@ func TestAccKafkaTopicConfigUpdate(t *testing.T) {
 		CheckDestroy: testAccKafkaTopicDelete,
 		Steps: []resource.TestStep{
 			{
-				Config: cfg(bootstrapServersFromEnv(), kafkaConnectServerFromEnv(), fmt.Sprintf(testResourceTopic_simpleConfig, topicName, "42")),
+				Config: cfg(setup.AkContainer.URI, kafkaConnectServerFromEnv(), fmt.Sprintf(testResourceTopic_simpleConfig, topicName, "42")),
 				Check: resource.ComposeTestCheckFunc(
 					testAccKafkaTopicExist("julieops_kafka_topic.test_config", "42"),
 				),
@@ -106,7 +120,7 @@ func cfg(bs string, connect string, extraCfg string) string {
 	var saslConfig = " \t sasl_username =  \"kafka\" \n \t sasl_password = \"kafka\" \n \t sasl_mechanism = \"plain\"  \n "
 	var connectConfig = fmt.Sprintf("\t kafka_connects = \"%s\" \n", connect)
 	var str = "provider \"julieops\" { \n \t bootstrap_servers = \"%s\" \n %s %s } \n %s \n"
-	//fmt.Printf("[DEBUG] cfgWithConnect: %s", fmt.Sprintf(str, bs, connectConfig, saslConfig, extraCfg))
+	//fmt.Printf("[DEBUG] cfg: %s", fmt.Sprintf(str, bs, connectConfig, saslConfig, extraCfg))
 	return fmt.Sprintf(str, bs, connectConfig, saslConfig, extraCfg)
 }
 

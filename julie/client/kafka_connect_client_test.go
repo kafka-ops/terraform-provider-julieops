@@ -1,13 +1,23 @@
 package client
 
 import (
+	"context"
+	julieTest "terraform-provider-julieops/julie/test"
 	"testing"
 )
 import "github.com/stretchr/testify/assert"
 
 func TestKafkaConnectClientDefault(t *testing.T) {
 
-	client := NewKafkaConnectClient("http://localhost:18083")
+	ctx := context.Background()
+	setup, close := julieTest.SetupDockerWithPath(ctx, julieTest.ContainersSetupConfig{
+		EnableSchemaRegistry: true,
+		EnableKafkaConnect:   true,
+		RootPath:             julieTest.AbsoluteMountPath("docker/res/", "/../../"),
+	}, t)
+	defer close(ctx)
+
+	client := NewKafkaConnectClient(setup.KcContainer.URI)
 	response, err := client.GetClusterInfo()
 	if err != nil {
 		t.Errorf("Something happen while getting cluster info: %s", err)
@@ -19,7 +29,15 @@ func TestKafkaConnectClientDefault(t *testing.T) {
 }
 
 func TestKafkaConnectCluster_GetConnectors(t *testing.T) {
-	client := NewKafkaConnectClient("http://localhost:18083")
+	ctx := context.Background()
+	setup, close := julieTest.SetupDockerWithPath(ctx, julieTest.ContainersSetupConfig{
+		EnableSchemaRegistry: true,
+		EnableKafkaConnect:   true,
+		RootPath:             julieTest.AbsoluteMountPath("docker/res/", "/../../"),
+	}, t)
+	defer close(ctx)
+
+	client := NewKafkaConnectClient(setup.KcContainer.URI)
 	response, err := client.GetConnectors()
 	if err != nil {
 		t.Errorf("Something happen while getting the connectors info: %s", err)
@@ -29,7 +47,15 @@ func TestKafkaConnectCluster_GetConnectors(t *testing.T) {
 }
 
 func TestKafkaConnectCluster_AddConnector(t *testing.T) {
-	client := NewKafkaConnectClient("http://localhost:18083")
+	ctx := context.Background()
+	setup, close := julieTest.SetupDockerWithPath(ctx, julieTest.ContainersSetupConfig{
+		EnableSchemaRegistry: true,
+		EnableKafkaConnect:   true,
+		RootPath:             julieTest.AbsoluteMountPath("docker/res/", "/../../"),
+	}, t)
+	defer close(ctx)
+
+	client := NewKafkaConnectClient(setup.KcContainer.URI)
 
 	var connectorConfig = map[string]interface{}{
 		"connector.class":                "io.confluent.kafka.connect.datagen.DatagenConnector",
@@ -56,7 +82,15 @@ func TestKafkaConnectCluster_AddConnector(t *testing.T) {
 }
 
 func TestKafkaConnectCluster_GetConnector(t *testing.T) {
-	client := NewKafkaConnectClient("http://localhost:18083")
+	ctx := context.Background()
+	setup, close := julieTest.SetupDockerWithPath(ctx, julieTest.ContainersSetupConfig{
+		EnableSchemaRegistry: true,
+		EnableKafkaConnect:   true,
+		RootPath:             julieTest.AbsoluteMountPath("docker/res/", "/../../"),
+	}, t)
+	defer close(ctx)
+
+	client := NewKafkaConnectClient(setup.KcContainer.URI)
 
 	var connectorConfig = map[string]interface{}{
 		"connector.class":                "io.confluent.kafka.connect.datagen.DatagenConnector",

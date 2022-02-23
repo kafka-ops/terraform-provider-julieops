@@ -1,14 +1,20 @@
 package julie
 
 import (
+	"context"
 	"fmt"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"terraform-provider-julieops/julie/client"
+	julieTest "terraform-provider-julieops/julie/test"
 	"testing"
 )
 
 func TestAccKafkaAclCreate(t *testing.T) {
+	ctx := context.Background()
+	setup, close := julieTest.SetupDocker(ctx, julieTest.ContainersSetupConfig{}, t)
+	defer close(ctx)
+
 	project := "foo"
 	resource.Test(t, resource.TestCase{
 		ProviderFactories: overrideProviderFactory(),
@@ -18,7 +24,7 @@ func TestAccKafkaAclCreate(t *testing.T) {
 		CheckDestroy: testAccKafkaAclDelete,
 		Steps: []resource.TestStep{
 			{
-				Config: cfg(bootstrapServersFromEnv(), kafkaConnectServerFromEnv(), fmt.Sprintf(testResourceAcl_noConfig, project)),
+				Config: cfg(setup.AkContainer.URI, kafkaConnectServerFromEnv(), fmt.Sprintf(testResourceAcl_noConfig, project)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccKafkaAclExist("julieops_kafka_consumer_acl.consumer", "User:bar"),
 				),

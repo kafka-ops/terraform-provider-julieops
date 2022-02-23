@@ -6,10 +6,17 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"terraform-provider-julieops/julie/client"
+	julieTest "terraform-provider-julieops/julie/test"
 	"testing"
 )
 
 func TestAccKafkaConnectCreate(t *testing.T) {
+	ctx := context.Background()
+	setup, close := julieTest.SetupDocker(ctx, julieTest.ContainersSetupConfig{
+		EnableSchemaRegistry: true, EnableKafkaConnect: true,
+	}, t)
+	defer close(ctx)
+
 	connectorName := "foo"
 	resource.Test(t, resource.TestCase{
 		ProviderFactories: overrideProviderFactory(),
@@ -19,7 +26,7 @@ func TestAccKafkaConnectCreate(t *testing.T) {
 		CheckDestroy: testAccKafkaConnectorDelete,
 		Steps: []resource.TestStep{
 			{
-				Config: cfg(bootstrapServersFromEnv(), kafkaConnectServerFromEnv(), fmt.Sprintf(testResourceConnector, connectorName)),
+				Config: cfg(setup.AkContainer.URI, setup.KcContainer.URI, fmt.Sprintf(testResourceConnector, connectorName)),
 				Check: resource.ComposeTestCheckFunc(
 					testAccKafkaConnectorExist("julieops_kafka_connector.test"),
 				),
