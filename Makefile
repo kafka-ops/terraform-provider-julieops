@@ -5,6 +5,7 @@ NAME=julieops
 BINARY=terraform-provider-${NAME}
 VERSION=0.3
 OS_ARCH=darwin_amd64
+TESTARGS=-p 1
 
 default: install
 
@@ -34,4 +35,4 @@ test:
 	echo $(TEST) | xargs -t -n4 go test -v $(TESTARGS) -timeout=30s -parallel=4
 
 testacc:
-	TF_ACC=1 go test -run TestAcc* $(TEST) -v $(TESTARGS) -timeout 120m -p 1
+	TF_ACC=1 go test $(TEST) -v $(TESTARGS) -run TestAcc* -timeout 12m
