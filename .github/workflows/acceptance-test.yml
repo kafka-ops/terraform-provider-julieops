@@ -1,6 +1,11 @@
 name: Acceptance Tests
 
 on:
+  workflow_dispatch:
+    name:
+      description: 'Reason and Motivation for this run'
+      required: true
+      default: 'Because I think is important'
   push:
     branches:
       - master
