@@ -38,6 +38,6 @@ jobs:
       - name: modTidy
         run: go mod tidy
       - name: modVendor
-          run: go mod vendor
+        run: go mod vendor
       - name: Run tests
         run: make testacc
