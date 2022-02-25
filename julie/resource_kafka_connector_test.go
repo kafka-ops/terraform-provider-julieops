@@ -10,7 +10,11 @@ import (
 	"testing"
 )
 
-func TestAccKafkaConnectCreate(t *testing.T) {
+func TestAccKafkaConnectorManagement(t *testing.T) {
+	t.Run("Test Kafka Connector create", testAccKafkaConnectCreate)
+}
+
+func testAccKafkaConnectCreate(t *testing.T) {
 	ctx := context.Background()
 	setup, close := julieTest.SetupDocker(ctx, julieTest.ContainersSetupConfig{
 		EnableSchemaRegistry: true, EnableKafkaConnect: true,

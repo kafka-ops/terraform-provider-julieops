@@ -5,7 +5,7 @@ NAME=julieops
 BINARY=terraform-provider-${NAME}
 VERSION=0.3
 OS_ARCH=darwin_amd64
-TESTARGS=-p 1
+TESTARGS=
 
 default: install
 
