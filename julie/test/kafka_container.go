@@ -159,7 +159,6 @@ func SetupKafkaEnv(ctx context.Context, zookeeperUri string, versionTag string, 
 		ExposedPorts: []string{"9092:9092"},
 		Env:          env,
 		BindMounts:   mounts,
-		Name:         "kafka",
 		Hostname:     "kafka",
 		Networks: []string{
 			"julie_ops-cli",
@@ -220,7 +219,6 @@ func SetupSchemaRegistry(ctx context.Context, config DockerContainerConfig) (*sc
 		Image:        "confluentinc/cp-schema-registry:" + config.VersionTag,
 		ExposedPorts: []string{SchemaRegistryPortString + ":" + SchemaRegistryPortString},
 		Env:          env,
-		Name:         "schema-registry",
 		Hostname:     "schema-registry",
 		Networks: []string{
 			"julie_ops-cli",
@@ -284,7 +282,6 @@ func SetupKafkaConnect(ctx context.Context, config DockerContainerConfig) (*kafk
 		ExposedPorts: []string{KafkaConnectPortString + ":" + KafkaConnectPortString},
 		Env:          env,
 		BindMounts:   mounts,
-		Name:         "kafka-connect",
 		Hostname:     "kafka-connect",
 		Networks: []string{
 			"julie_ops-cli",

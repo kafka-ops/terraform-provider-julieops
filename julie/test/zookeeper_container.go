@@ -40,7 +40,6 @@ func SetupZookeeperEnv(ctx context.Context, versionTag string, mountPath string)
 		ExposedPorts: []string{"2181/tcp"},
 		Env:          env,
 		BindMounts:   mounts,
-		Name:         "zookeeper",
 		Hostname:     "zookeeper",
 		Networks: []string{
 			"julie_ops-cli",
