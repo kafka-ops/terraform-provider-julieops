@@ -19,7 +19,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         java: [11.0.x]
-        go: ['^1.13.1']
+        go: ['^1.17.1']
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
