@@ -8,10 +8,10 @@ on:
       default: 'Because I think is important'
   push:
     branches:
-      - master
+      - main
   pull_request:
     branches:
-      - master
+      - main
 
 jobs:
   build:
