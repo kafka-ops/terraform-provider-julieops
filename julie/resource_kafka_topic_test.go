@@ -10,7 +10,13 @@ import (
 	"testing"
 )
 
-func TestAccKafkaTopicCreateWithoutConfig(t *testing.T) {
+func TestAccKafkaTopicManagement(t *testing.T) {
+	t.Run("Test Kafka Topics without Config", testKafkaTopicCreateWithoutConfig)
+	t.Run("Test Kafka Topics with Config", testKafkaTopicCreateWithConfig)
+	t.Run("Test Kafka Topics update", testKafkaTopicConfigUpdate)
+}
+
+func testKafkaTopicCreateWithoutConfig(t *testing.T) {
 
 	ctx := context.Background()
 	setup, close := julieTest.SetupDocker(ctx, julieTest.ContainersSetupConfig{}, t)
@@ -35,7 +41,7 @@ func TestAccKafkaTopicCreateWithoutConfig(t *testing.T) {
 	})
 }
 
-func TestAccKafkaTopicCreateWithConfig(t *testing.T) {
+func testKafkaTopicCreateWithConfig(t *testing.T) {
 	ctx := context.Background()
 	setup, close := julieTest.SetupDocker(ctx, julieTest.ContainersSetupConfig{}, t)
 	defer close(ctx)
@@ -59,7 +65,7 @@ func TestAccKafkaTopicCreateWithConfig(t *testing.T) {
 	})
 }
 
-func TestAccKafkaTopicConfigUpdate(t *testing.T) {
+func testKafkaTopicConfigUpdate(t *testing.T) {
 	ctx := context.Background()
 	setup, close := julieTest.SetupDocker(ctx, julieTest.ContainersSetupConfig{}, t)
 	defer close(ctx)
@@ -108,13 +114,6 @@ resource "julieops_kafka_topic" "test_config" {
   }
 }
 `
-
-/*func cfg(bs string, extraCfg string) string {
-	var saslConfig = " \t sasl_username =  \"kafka\" \n \t sasl_password = \"kafka\" \n \t sasl_mechanism = \"plain\"  \n "
-	var str = "provider \"julieops\" { \n \t bootstrap_servers = \"%s\" \n %s } \n %s \n"
-	//log.Printf(str, bs, saslConfig, extraCfg)
-	return fmt.Sprintf(str, bs, saslConfig, extraCfg)
-}*/
 
 func cfg(bs string, connect string, extraCfg string) string {
 	var saslConfig = " \t sasl_username =  \"kafka\" \n \t sasl_password = \"kafka\" \n \t sasl_mechanism = \"plain\"  \n "

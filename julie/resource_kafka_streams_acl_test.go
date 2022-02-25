@@ -10,7 +10,11 @@ import (
 	"testing"
 )
 
-func TestAccKafkaStreamsAclCreate(t *testing.T) {
+func TestAccKafkaStreamsAclsManagement(t *testing.T) {
+	t.Run("Test Kafka Streams ACLs create", testAccKafkaStreamsAclCreate)
+}
+
+func testAccKafkaStreamsAclCreate(t *testing.T) {
 
 	ctx := context.Background()
 	setup, close := julieTest.SetupDocker(ctx, julieTest.ContainersSetupConfig{}, t)

@@ -10,7 +10,11 @@ import (
 	"testing"
 )
 
-func TestAccKafkaConnectAclCreate(t *testing.T) {
+func TestAccKafkaConnectAclsManagement(t *testing.T) {
+	t.Run("Test Kafka Connect ACLs create", testAccKafkaConnectAclCreate)
+}
+
+func testAccKafkaConnectAclCreate(t *testing.T) {
 	ctx := context.Background()
 	setup, close := julieTest.SetupDocker(ctx, julieTest.ContainersSetupConfig{}, t)
 	defer close(ctx)
